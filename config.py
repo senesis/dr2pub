@@ -17,7 +17,7 @@ from utils import dr2xml_error
 python_version = "python"+sys.version[0]
 
 # General variables
-version = "2.1"  # dr2xml version
+version = "2.2"  # dr2xml version
 
 # CMIP6 variables
 conventions = "CF-1.7 CMIP-6.2"

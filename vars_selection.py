@@ -188,6 +188,8 @@ def RequestItem_applies_for_exp_and_year(ri, experiment, year=None, debug=False)
             ri_applies_to_experiment = False
 
     if ri_applies_to_experiment:
+        if debug:
+            print("Year considered:", year, type(year))
         if year is None:
             rep = True
             endyear = None
@@ -425,7 +427,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
 
     """
     #
-    debug = False
+    debug = True
     # From MIPS set to Request links
     global sc, global_rls, grid_choice, rls_for_all_experiments, sn_issues
     if sset:
@@ -454,7 +456,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     mips_list.sort()
     #
     if rls_for_all_experiments is None:
-        rls_for_mips = sc.getRequestLinkByMip(set(mips_list)) # Because scope do not accept list types
+        rls_for_mips = sorted(list(sc.getRequestLinkByMip(set(mips_list)))) # Because scope do not accept list types
         if printout:
             print("Number of Request Links which apply to MIPS", print_struct(mips_list), " is: ", len(rls_for_mips))
         #
@@ -480,7 +482,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
             print("Number of Request Links after filtering by included_request_links is: ", len(rls_for_mips))
         rls_for_all_experiments = [rl for rl in rls_for_mips]
     else:
-        rls_for_mips = rls_for_all_experiments
+        rls_for_mips = sorted(rls_for_all_experiments)
     #
     if sset:
         experiment_id = get_variable_from_sset_with_default_in_sset('experiment_for_requests', 'experiment_id')
