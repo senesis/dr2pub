@@ -352,7 +352,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     if "fx" in sv.frequency:
         if get_variable_from_sset_with_default("CORDEX_data", False):
             filename = "_".join(([prefix + sv.label, CORDEX_domain.get(context), driving_model_id, expid_in_filename,
-                                  member_id, source_id, rcm_version_id, sv.frequency]))
+                                  driving_model_ensemble_member, source_id, rcm_version_id, sv.frequency]))
         else:
             filename = "_".join(([prefix + sv.label, table, source_id, expid_in_filename, member_id, grid_label]))
         varname_for_filename = sv.label
@@ -371,7 +371,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             suffix = ""
         if get_variable_from_sset_with_default("CORDEX_data", False):
             liste_attributes = [prefix + varname_for_filename, CORDEX_domain.get(context), driving_model_id,
-                                expid_in_filename, member_id, source_id, rcm_version_id, sv.frequency, date_range +
+                                expid_in_filename, driving_model_ensemble_member, source_id, rcm_version_id, sv.frequency, date_range +
                                 suffix]
             filename = "_".join([attribute for attribute in liste_attributes if attribute != ""])
         else:
@@ -470,7 +470,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     dict_file["time_stamp_name"] = "creation_date"
     dict_file["time_stamp_format"] = "%Y-%m-%dT%H:%M:%SZ"
     dict_file["uuid_name"] = "tracking_id"
-    dict_file["uuid_format"] = "hdl:21.14100/%uuid%"
+    dict_file["uuid_format"] = "hdl:{}/%uuid%".format(get_variable_from_sset_else_lset_with_default("HDL", "21.14100"))
     dict_file["convention_str"] = get_config_variable("conventions")
     # out.write(' description="A %s result for experiment %s of %s"'%
     #            (lset['source_id'],sset['experiment_id'],sset.get('project',"CMIP6")))
@@ -606,7 +606,10 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         wr(xml_file, 'branch_method', "no parent")
     #
     wr(xml_file, "physics_index", physics_index, num_type="int")
-    wr(xml_file, 'product', 'model-output')
+    if get_variable_from_sset_with_default("CORDEX_data", False):
+        wr(xml_file, "product", "output")
+    else:
+        wr(xml_file, 'product', 'model-output')
     wr(xml_file, "realization_index", realization_index, num_type="int")
     # Patch for an issue id DR01.0021 -> 01.00.24
     crealm = sv.modeling_realm
@@ -985,7 +988,10 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     if sv.units:
         rep.append(wrv('units', sv.units))
     if sv.cell_methods:
-        rep.append(wrv('cell_methods', sv.cell_methods))
+        if get_variable_from_sset_with_default("CORDEX_data", False) and "area: time: mean" in sv.cell_methods:
+            rep.append(wrv("cell_methods", "time:mean"))
+        else:
+            rep.append(wrv('cell_methods', sv.cell_methods))
     if sv.cell_measures:
         rep.append(wrv('cell_measures', sv.cell_measures))
     #
