@@ -875,7 +875,10 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     #
     rep_dict = OrderedDict()
     rep_dict["field_ref"] = last_field_id
-    rep_dict["name"] = sv.mipVarLabel
+    if sv.label == "tsland":
+        rep_dict["name"] = "tsland"
+    else:
+        rep_dict["name"] = sv.mipVarLabel
     if last_grid_id != grid_id_in_ping:
         rep_dict["grid_ref"] = last_grid_id
     #
