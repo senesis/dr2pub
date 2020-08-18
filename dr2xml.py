@@ -170,7 +170,7 @@ example_lab_and_model_settings = {
     # Vars computed with a period which is not the basic timestep must be declared explictly,
     # with that period, in order that 'instant' sampling works correctly
     # (the units for period should be different from the units of any instant ouput frequency
-    # for those variables - 'mi' loooks fine, 'ts' may work)
+    # for those variables - 'mi' looks fine, 'ts' may work)
     "special_timestep_vars": {
         "60mi": ['parasolRefl', 'clhcalipso', 'cltcalipso', 'cllcalipso', 'clmcalipso', 'cfadLidarsr532', 'clcalipso',
                  'clcalipso2', 'cfadDbze94', 'jpdftaureliqmodis', 'clisccp', 'jpdftaureicemodis', 'clmisr'],
