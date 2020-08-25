@@ -266,7 +266,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         grid_label, grid_resolution, grid_description = DRgrid2gridatts(grid, is_dev=(grid == "native" and
                                                                                       sv.type == "dev"))
 
-    if table[-1:] == "Z":  # e.g. 'AERmonZ','EmonZ', 'EdayZ'
+    if table.endswith("Z"):  # e.g. 'AERmonZ','EmonZ', 'EdayZ'
         grid_label += "z"
         # Below : when reduction was done trough a two steps sum, we needed to divide afterwards
         # by the number of longitudes
