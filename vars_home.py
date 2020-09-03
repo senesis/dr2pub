@@ -140,6 +140,8 @@ def read_homeVars_list(hmv_file, expid, mips, path_extra_tables=None, printout=F
                 home_var.cell_methods = tcmName2tcmValue[home_var.temporal_shp]
                 home_var.label_without_psuffix = home_var.label
                 home_var.cell_measures = ""
+                if home_var.mipVarLabel is None:
+                    home_var.mipVarLabel = home_var.label
             elif hmv_type == "dev":
                 home_var.mip_era = 'DEV'
                 home_var.mipVarLabel = home_var.label
@@ -463,8 +465,7 @@ def process_homeVars(mip_vars_list, mips, expid=False, printout=False):
             is_cmor = get_corresp_CMORvar(hv)
             if not is_cmor:
                 # Check if HOME variable differs from CMOR one only by shapes
-                has_cmor_varname = any([cmvar.label == hv.label for
-                                        cmvar in get_collection('CMORvar').items])
+                has_cmor_varname = any([cmvar.label == hv.label for cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_CMORvarId_by_label(hv.label))
                 if has_cmor_varname:
                     if printout:
@@ -486,8 +487,7 @@ def process_homeVars(mip_vars_list, mips, expid=False, printout=False):
             is_cmor = get_corresp_CMORvar(hv)
             if not is_cmor:
                 # Check if HOME variable differs from CMOR one only by shapes
-                has_cmor_varname = any([cmvar.label == hv.label for
-                                        cmvar in get_collection('CMORvar').items])
+                has_cmor_varname = any([cmvar.label == hv.label for cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_CMORvarId_by_label(hv.label))
                 if has_cmor_varname:
                     if printout:
@@ -566,12 +566,13 @@ def get_corresp_CMORvar(hmvar):
             var_freq_asked = hmvar.frequency
         allow_pseudo = get_variable_from_lset_with_default('allow_pseudo_standard_names', False)
         global sn_issues_home
-        sn_issues_home = complement_svar_using_cmorvar(hmvar, cmvar_found, sn_issues_home, [], allow_pseudo)
+        sn_issues_home, hmvar = complement_svar_using_cmorvar(hmvar, cmvar_found, sn_issues_home, [], allow_pseudo)
         if empty_table:
             hmvar.frequency = var_freq_asked
             hmvar.mipTable = "None" + hmvar.frequency
         return hmvar
-    return False
+    else:
+        return False
 
 
 def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo=False):
@@ -728,7 +729,7 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
     # mip_era='CMIP6' dans le cas CMORvar
     svar.mip_era = 'CMIP6'
     #
-    return sn_issues
+    return sn_issues, svar
 
 
 def get_simpleDim_from_DimId(dimid):
@@ -816,7 +817,7 @@ def get_simplevar(label, table, freq=None):
             else:
                 psvar = get_CMORvar('ps', 'Esubhr')
     if psvar:
-        complement_svar_using_cmorvar(svar, psvar, None, [], False)
+        foo, svar = complement_svar_using_cmorvar(svar, psvar, None, [], False)
         return svar
 
 
