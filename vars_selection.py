@@ -628,7 +628,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     for v in d:
         svar = simple_CMORvar()
         cmvar = get_uid(v)
-        sn_issues = complement_svar_using_cmorvar(svar, cmvar, sn_issues, [], allow_pseudo)
+        sn_issues, svar = complement_svar_using_cmorvar(svar, cmvar, sn_issues, [], allow_pseudo)
         svar.Priority = analyze_priority(cmvar, mips_list)
         svar.grids = d[v]
         if debug:

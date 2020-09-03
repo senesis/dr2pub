@@ -186,7 +186,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             alias_ping = ping_alias(sv, pingvars)
     #
     # process only variables in pingvars except for dev variables
-    if alias_ping not in pingvars and sv.type != "dev":
+    if alias_ping not in pingvars and sv.type not in ["dev", "perso"]:
         # print "+++ =>>>>>>>>>>>", alias_ping, " ", sv.label
         table = sv.mipTable
         if table not in skipped_vars_per_table:
@@ -775,6 +775,8 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
             grid_id_in_ping = context_index[grid_id].attrib["id"]
     else:
         alias_ping = ping_alias(sv, pingvars)
+        if alias_ping is None:
+            alias_ping = alias
         grid_id_in_ping = id2gridid(alias_ping, context_index)
     last_grid_id = grid_id_in_ping
     # last_grid_id=None
