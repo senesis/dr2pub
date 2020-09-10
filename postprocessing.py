@@ -305,6 +305,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     axis_24h_dict["unit"] = "days since ?"
     axis_24h_dict["standard_name"] = "time"
     axis_24h_dict["value"] = "(0,23)[{}]".format(" ".join([str(i + 0.5) for i in range(0,24)]))
+    axis_24h_dict["axis_type"] = "T"
     axis_24h = create_xml_element(tag="axis", attrib=axis_24h_dict)
     create_xml_sub_element(xml_element=axis_24h, tag="temporal_splitting")
     axis_defs[axis_24h_id] = axis_24h
@@ -320,6 +321,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     grid_24h_dict["name"] = "time3"
     grid_24h_dict["unit"] = "days since ?"
     grid_24h_dict["standard_name"] = "time"
+    grid_24h_dict["axis_type"] = "T"
     create_xml_sub_element(xml_element=grid_24h, tag="axis", attrib=grid_24h_dict)
     grid_defs[grid_24h_id] = grid_24h
     if printout:
