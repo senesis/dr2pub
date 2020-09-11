@@ -258,7 +258,7 @@ def field_size(svar, mcfg):
             siz = atm_grid_size
         else:
             siz = atm_grid_size * svar.other_dims_size
-    elif s[0:4] == "XY-H":  # Global field (altitudes)
+    elif s[0:4] in ["XY-H", "XY-HG"]:  # Global field (altitudes)
         siz = atm_grid_size * svar.other_dims_size
     elif s == "S-AH":  # Atmospheric profiles (half levels) at specified sites
         siz = (atm_nblev + 1) * nb_cosp_sites

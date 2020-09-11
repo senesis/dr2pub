@@ -25,7 +25,8 @@ from settings_interface import get_variable_from_lset_without_default, get_varia
 # Interface to Data Request
 from dr_interface import get_collection, get_uid
 # Interface to xml tools
-from xml_interface import create_string_from_xml_element, create_xml_element, create_xml_sub_element
+from xml_interface import create_string_from_xml_element, create_xml_element, create_xml_sub_element, \
+    remove_subelement_in_xml_element
 
 # CFsites tools
 from cfsites import cfsites_grid_id, add_cfsites_in_defs, cfsites_domain_id
@@ -521,3 +522,59 @@ def create_standard_domain(resol, ni, nj):
     create_xml_sub_element(xml_element=rep, tag="interpolate_domain", attrib=interpolate_domain_dict)
     return rep
 
+
+def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_axis, change_scalar=True):
+    """
+    Returns a grid_definition with id GRIDOUT_ID from an input grid definition
+    GRIDIN_DEF, by adding a reference to scalar SCALAR_ID
+
+    If CHANGE_SCALAR is True and GRIDIN_DEF has an axis with an extract_axis child,
+    remove it (because it is assumed to be a less well-defined proxy for the DR scalar
+
+    If such a reference is already included in that grid definition, just return
+    input def
+
+    if REMOVE_AXIS is True, if GRIDIN_DEF already includes an axis, remove it for output grid
+
+    Note : name of input_grid is not changed in output_grid
+
+    """
+    rep = gridin_def.copy()
+    test_scalar_in_grid = False
+    for child in rep:
+        if child.tag == "scalar":
+            if "scalar_ref" in child.attrib and child.attrib["scalar_ref"] == scalar_id:
+                test_scalar_in_grid = True
+    if test_scalar_in_grid:
+        return rep
+    # TBD : in change_scalar : discard extract_axis only if really relevant (get the right axis)
+    # TBD : in change_scalar : preserve ordering of domains/axes...
+    if change_scalar:
+        count = 0
+        children_to_remove = list()
+        for child in rep:
+            test_child = False
+            if child.tag == "scalar":
+                for scalar_child in child:
+                    if scalar_child.tag == "extract_axis":
+                        test_child = True
+            if test_child:
+                count += 1
+                children_to_remove.append(child)
+        for child_to_remove in children_to_remove:
+            rep.remove(child_to_remove)
+    if "id" in rep.attrib:
+        rep.attrib["id"] = gridout_id
+        scalar_dict = OrderedDict()
+        scalar_dict["scalar_ref"] = scalar_id
+        scalar_dict["name"] = scalar_name
+        create_xml_sub_element(xml_element=rep, tag="scalar", attrib=scalar_dict)
+    else:
+        raise dr2xml_error("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
+    # Remove any axis if asked for
+    if remove_axis:
+        remove_subelement_in_xml_element(xml_element=rep, tag="axis")
+        # if count==1 :
+        #    print "Info: axis has been removed for scalar %s (%s)"%(scalar_name,scalar_id)
+        #    print "grid_def="+rep
+    return rep

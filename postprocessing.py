@@ -25,7 +25,8 @@ from xml_interface import create_string_from_xml_element, create_xml_element, cr
 from analyzer import Cmip6Freq2XiosFreq
 
 # Grids tools
-from grids import isVertDim, create_axis_def, create_grid_def, change_domain_in_grid
+from grids import isVertDim, create_axis_def, create_grid_def, change_domain_in_grid, add_scalar_in_grid, \
+    change_axes_in_grid
 
 # XIOS reading and writing tools
 from Xparse import id2grid
@@ -340,3 +341,66 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
         print("***>", create_string_from_xml_element(alias_24h), "\n")
 
     return alias_24h_id, grid_24h_id
+
+
+def process_levels_over_orog(sv, alias, pingvars, src_grid_id, field_defs, axis_defs, grid_defs, domain_defs,
+                             scalar_defs, table):
+    vdims = [sd for sd in sv.sdims.values() if isVertDim(sd)]
+    if len(vdims) == 1:
+        sd = vdims[0]
+    elif len(vdims) > 1:
+        raise dr2xml_error("Too many vertical dims for %s (%s)" % (sv.label, repr(vdims)))
+    if len(vdims) == 0:
+        # Analyze if there is a singleton vertical dimension for the variable
+        # sd=scalar_vertical_dimension(sv)
+        # if sd is not None :
+        #    print "Single level %s for %s"%(sv,sv.label),vdims
+        # else:
+        raise dr2xml_error(
+            "Not enough vertical dims for %s (%s)" % (sv.label, [(s.label, s.out_name) for s in sv.sdims.values()]))
+
+    field_id = "_".join([alias, sd.label])
+    if field_id in pingvars:
+        print("No computing on height level other the ground needed, found %s in pingvars." % field_id)
+        grid_id = src_grid_id
+    else:
+        context_index = get_config_variable("context_index")
+        if "height_over_orog" not in context_index:
+            raise KeyError("height_over_orog must have been define in field_def")
+        alias_in_ping = get_variable_from_lset_without_default("ping_variables_prefix") + sv.label_without_psuffix
+        if alias_in_ping not in pingvars:  # e.g. alias_in_ping='CMIP6_hus'
+            raise dr2xml_error("Field id " + alias_in_ping + " expected in pingfile but not found.")
+        if sd.requested:
+            glo_list = sd.requested.strip(" ").split()
+        else:
+            glo_list = sd.value.strip(" ").split()
+        glo_list_num = [float(v) for v in glo_list]
+        glo_list_num.sort(reverse=True)
+        n_glo = len(glo_list)
+        axis_dict = OrderedDict()
+        axis_id = "_".join([sd.out_name, "hglev%s" % "-".join(sd.values)])
+        axis_dict["id"] = axis_id
+        axis_dict["axis_ref"] = "height_over_orog"
+        if n_glo > 1:
+            # Case of a non-degenerated vertical dimension (not a singleton)
+            axis_dict["n_glo"] = str(n_glo)
+            axis_dict["value"] = "(0,{})[ {} ]".format(n_glo - 1, sd.requested)
+        else:
+            if n_glo != 1:
+                print("Warning: axis for %s is singleton but has %d values" % (sd.label, n_glo))
+                return None
+            # Singleton case (degenerated vertical dimension)
+            axis_dict["n_glo"] = str(n_glo)
+            axis_dict["value"] = '(0,0)[ {} ]'.format(sd.value)
+        axis = create_xml_element(tag="axis", attrib=axis_dict)
+        axis_defs[axis_id] = axis
+
+        grid_id = create_grid_def(grid_defs, axis_defs[axis_id], sd.out_name, src_grid_id)
+
+        field_dict = OrderedDict()
+        field_dict["id"] = field_id
+        field_dict["field_ref"] = alias_in_ping
+        field_dict["grid_ref"] = grid_id
+        field = create_xml_element(tag="field", attrib=field_dict)
+        field_defs[field_id] = field
+    return field_id, grid_id

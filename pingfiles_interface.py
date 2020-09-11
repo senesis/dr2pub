@@ -361,6 +361,8 @@ def highest_rank(svar):
         shape = "XYA"
     elif any(["XY-H" in s for s in shapes]):
         shape = "XYA"
+    elif any(["XY-HG" in s for s in shapes]):
+        shape = "XYA"
     #
     elif any(["XY-na" in s for s in shapes]):
         shape = "XY"  # analyser realm, pb possible sur ambiguite singleton
