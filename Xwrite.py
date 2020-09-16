@@ -536,16 +536,19 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     wr(xml_file, 'comment', comment)
     wr(xml_file, 'history', sset, default='none')
     wr(xml_file, "initialization_index", initialization_index, num_type="int")
-    wr(xml_file, "institution_id", institution_id)
     if get_variable_from_sset_with_default("CORDEX_data", False):
+        wr(xml_file, "institute_id", institution_id)
         wr(xml_file, "CORDEX_domain", CORDEX_domain.get(context))
         wr(xml_file, "driving_model_id", driving_model_id)
         wr(xml_file, "driving_model_ensemble_member", driving_model_ensemble_member)
         wr(xml_file, "driving_experiment_name", driving_experiment_name)
         wr(xml_file, "driving_experiment", driving_experiment)
-        wr(xml_file, "Lambert_conformal_longitude_of_central_meridian", lambert_conformal_longitude_of_central_meridian)
-        wr(xml_file, "Lambert_conformal_standard_parallel", lambert_conformal_standard_parallel)
-        wr(xml_file, "Lambert_conformal_latitude_of_projection_origin", lambert_conformal_latitude_of_projection_origin)
+        if context in ["surfex", ]:
+            wr(xml_file, "Lambert_conformal_longitude_of_central_meridian", lambert_conformal_longitude_of_central_meridian)
+            wr(xml_file, "Lambert_conformal_standard_parallel", lambert_conformal_standard_parallel)
+            wr(xml_file, "Lambert_conformal_latitude_of_projection_origin", lambert_conformal_latitude_of_projection_origin)
+    else:
+        wr(xml_file, "institution_id", institution_id)
     if is_key_in_lset('institution'):
         inst = get_variable_from_lset_without_default('institution')
     else:
@@ -628,8 +631,12 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             source = get_variable_from_lset_without_default('source')
         else:
             raise dr2xml_error("Fatal: source for %s not found in CMIP6_CV at %s, nor in lset" % (source_id, cvspath))
-    wr(xml_file, 'source', source)
-    wr(xml_file, 'source_id', source_id)
+    if get_variable_from_sset_with_default("CORDEX_data", False):
+        wr(xml_file, 'project_id', source)
+        wr(xml_file, 'model_id', source_id)
+    else:
+        wr(xml_file, 'source', source)
+        wr(xml_file, 'source_id', source_id)
     if isinstance(source_type, list):
         source_type = reduce(lambda x, y: x + " " + y, source_type)
     wr(xml_file, 'source_type', source_type)
@@ -1010,7 +1017,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
         fvalues = sv.struct.flag_values
         if fvalues is not None and fvalues.strip() != '':
             rep.append(wrv('flag_values', fvalues.strip()))
-    if get_variable_from_sset_with_default("CORDEX_data", False):
+    if get_variable_from_sset_with_default("CORDEX_data", False) and context in ["surfex", ]:
         rep.append(wrv('grid_mapping', "Lambert_Conformal"))
     #
     # We override the Xios value for interval_operation because it sets it to
