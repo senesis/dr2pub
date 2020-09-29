@@ -95,9 +95,7 @@ def read_homeVars_list(hmv_file, expid, mips, path_extra_tables=None, printout=F
     homevars = []
     extravars = []
     extra_vars_per_table = OrderedDict()
-    for line in data:
-        if line[0] == '#':
-            continue
+    for line in [l for l in data if len(l) > 0 and not l.startswith("#")]:
         line_split = line.split(';')
         # get the Table full name
         table = line_split[4].strip(' ')
