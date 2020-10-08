@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: pingfiles_interface.read_pingfiles_variables
 
 .. autofunction:: pingfiles_interface.read_xml_elmt_or_attrib

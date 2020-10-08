@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: analyzer.freq2datefmt
 
 .. autofunction:: analyzer.analyze_cell_time_method

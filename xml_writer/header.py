@@ -20,11 +20,21 @@ class Header(Beacon):
     Class to deal with xml header.
     """
     def __init__(self, tag, attrib=OrderedDict()):
+        """
+        
+        :param tag:
+        :param attrib:
+        """
         super(Header, self).__init__()
         self.tag = tag
         self.attrib = deepcopy(attrib)
 
     def __eq__(self, other):
+        """
+
+        :param other:
+        :return:
+        """
         test = super(Header, self).__eq__(other)
         if test:
             test = self._test_attribute_equality("tag", other)
@@ -33,11 +43,19 @@ class Header(Beacon):
         return test
 
     def __copy__(self):
+        """
+
+        :return:
+        """
         element = Header(tag=self.tag, attrib=deepcopy(self.attrib))
         element.update_level(self.level)
         return element
 
     def dump(self):
+        """
+
+        :return:
+        """
         offset = "\t" * self.level
         if len(self.attrib) > 0:
             rep = offset + '<?{} {}?>'.format(self.tag, self._dump_attrib())
@@ -46,15 +64,26 @@ class Header(Beacon):
         return encode_if_needed(rep)
 
     def _dump_attrib(self, sort=False):
+        """
+
+        :param sort:
+        :return:
+        """
         return self.dump_dict(deepcopy(self.attrib), sort=sort)
 
 
-# XML header regexp
+#: XML header regexp
 _xml_header_regexp = re.compile(r'(\s?<\s?\?\s?(?P<tag>\w*){}\s?\?>\s?)'.format(_generic_dict_regexp))
 _xml_header_regexp_begin = re.compile(r'^<\s?\?\s?(?P<tag>\w*){}\s?\?>'.format(_generic_dict_regexp))
 
 
 def _find_xml_header(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     pattern_findall = _xml_header_regexp.findall(xml_string)
     if len(pattern_findall) > 1:
         raise Exception("There should be only one header in an XML document.")

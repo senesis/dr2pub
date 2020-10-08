@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: grids_selection.normalize
 
 .. autofunction:: grids_selection.decide_for_grids

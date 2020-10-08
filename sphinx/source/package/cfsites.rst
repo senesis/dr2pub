@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: cfsites.cfsites_input_filedef
 
 .. autofunction:: cfsites.add_cfsites_in_defs

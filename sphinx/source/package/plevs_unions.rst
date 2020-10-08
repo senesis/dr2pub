@@ -10,7 +10,4 @@
 
 
 
-Functions
----------
-
 .. autofunction:: plevs_unions.create_xios_axis_and_grids_for_plevs_unions

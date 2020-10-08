@@ -17,6 +17,12 @@ from xml_writer.utils import _find_text, print_if_needed, iterate_on_string
 
 
 def xml_file_parser(xml_file, verbose=False):
+    """
+
+    :param xml_file:
+    :param verbose:
+    :return:
+    """
     with open(xml_file, "rb") as opened_file:
         xml_content = opened_file.readlines()
     xml_string = "\n".join([line.decode("utf-8") for line in xml_content])
@@ -25,6 +31,12 @@ def xml_file_parser(xml_file, verbose=False):
 
 
 def parse_xml_string_rewrite(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     # Build the list of xml elements from the xml_string
     list_of_elements = generate_list_from_xml_string(xml_string, verbose=verbose)
     # Build the xml tree from the built list
@@ -47,6 +59,12 @@ def parse_xml_string_rewrite(xml_string, verbose=False):
 
 
 def generate_list_from_xml_string(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     list_of_elements = list()
     remained_xml_string = ""
     level = 0
@@ -82,6 +100,12 @@ def generate_list_from_xml_string(xml_string, verbose=False):
 
 
 def generate_xml_tree_from_list(list_of_elements, verbose=False):
+    """
+
+    :param list_of_elements:
+    :param verbose:
+    :return:
+    """
     current_elts = list()
     list_of_texts = list()
     list_of_comments = list()
@@ -121,6 +145,14 @@ def generate_xml_tree_from_list(list_of_elements, verbose=False):
 
 
 def find_next_element(xml_string, level=0, tag=None, verbose=False):
+    """
+
+    :param xml_string:
+    :param level:
+    :param tag:
+    :param verbose:
+    :return:
+    """
     xml_string = xml_string.strip()
     print_if_needed(xml_string, verbose=verbose)
     # Check if the element is some text

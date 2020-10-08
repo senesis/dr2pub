@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: file_splitting.read_splitfreqs
 
 .. autofunction:: file_splitting.read_compression_factors

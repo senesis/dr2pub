@@ -9,9 +9,6 @@
 .. versionadded:: 1.0
 
 
-Functions
----------
-
 .. autofunction:: Xwrite.wr
 
 .. autofunction:: Xwrite.write_xios_file_def_for_svar

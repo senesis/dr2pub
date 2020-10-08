@@ -10,9 +10,6 @@
 
 
 
-Classes
--------
-
 .. autoclass:: utils.dr2xml_error
 
 .. autoclass:: utils.dr2xml_grid_error

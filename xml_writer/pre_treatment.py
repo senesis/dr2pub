@@ -14,6 +14,12 @@ from xml_writer.utils import print_if_needed, iterate_on_string
 
 
 def iterate_on_characters_to_check(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     # Find the special characters' positions
     tmp_characters_to_check = list()
     list_other_greater = list()
@@ -59,6 +65,12 @@ def iterate_on_characters_to_check(xml_string, verbose=False):
 
 
 def _pre_xml_string_format(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     if not isinstance(xml_string, six.string_types):
         raise TypeError("Argument must be a string or equivalent, not %s." % type(xml_string))
     # Some other pre-treatments on the string
@@ -193,6 +205,16 @@ def _pre_xml_string_format(xml_string, verbose=False):
 
 
 def replace_char_at_pos_by_string(complete_string, string_in, replace_out, pos_init, pos_end, verbose=False):
+    """
+
+    :param complete_string:
+    :param string_in:
+    :param replace_out:
+    :param pos_init:
+    :param pos_end:
+    :param verbose:
+    :return:
+    """
     if verbose:
         print("<<<replace_char_at_pos_by_string>>> len of input string", len(complete_string))
     single_char = pos_init == pos_end

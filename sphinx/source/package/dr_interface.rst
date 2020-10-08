@@ -9,10 +9,6 @@
 .. versionadded:: 1.0
 
 
-
-Functions
----------
-
 .. autofunction:: dr_interface.get_uid
 
 .. autofunction:: dr_interface.get_request_by_id_by_sect

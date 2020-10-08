@@ -8,10 +8,6 @@
 .. sectionauthor:: The dr2xml Team
 .. versionadded:: 1.0
 
-
-Functions
----------
-
 .. autofunction:: vars_home.read_homeVars_list
 
 .. autofunction:: vars_home.read_extraTable
