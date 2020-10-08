@@ -14,7 +14,9 @@ from xml_writer.utils import encode_if_needed, print_if_needed
 
 
 class Comment(Beacon):
+    """
 
+    """
     def __init__(self, comment):
         """
 
@@ -50,6 +52,9 @@ class Comment(Beacon):
         """
         rep = "\t" * self.level + "<!--%s-->" % self.comment
         return encode_if_needed(rep)
+
+    def _dump_attrib(self, sort=False):
+        return NotImplementedError()
 
 
 #: XML comment regexp

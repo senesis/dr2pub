@@ -25,7 +25,7 @@
 
 .. autofunction:: grids.create_axis_from_dim
 
-.. autofunction:: grids.isVertDim
+.. autofunction:: grids.is_vert_dim
 
 .. autofunction:: grids.scalar_vertical_dimension
 

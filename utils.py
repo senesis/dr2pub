@@ -11,7 +11,7 @@ import sys
 from collections import OrderedDict
 
 
-class dr2xml_error(Exception):
+class Dr2xmlError(Exception):
     """
     dr2xml generic exceptions.
     """
@@ -23,7 +23,7 @@ class dr2xml_error(Exception):
     # """ just for test"""
 
 
-class dr2xml_grid_error(Exception):
+class Dr2xmlGridError(Exception):
     """
     Dr2xml grids specific exceptions.
     """
@@ -34,7 +34,7 @@ class dr2xml_grid_error(Exception):
         return repr(self.valeur)
 
 
-class vars_error(Exception):
+class VarsError(Exception):
     """
     Vars specific exceptions.
     """
@@ -46,6 +46,12 @@ class vars_error(Exception):
 
 
 def encode_if_needed(a_string, encoding="utf-8"):
+    """
+
+    :param a_string:
+    :param encoding:
+    :return:
+    """
     if sys.version.startswith("2."):
         return a_string.encode(encoding)
     elif sys.version.startswith("3."):
@@ -55,6 +61,12 @@ def encode_if_needed(a_string, encoding="utf-8"):
 
 
 def decode_if_needed(a_string, encoding="utf-8"):
+    """
+
+    :param a_string:
+    :param encoding:
+    :return:
+    """
     if sys.version.startswith("2."):
         return a_string.decode(encoding)
     elif sys.version.startswith("3."):
@@ -64,6 +76,14 @@ def decode_if_needed(a_string, encoding="utf-8"):
 
 
 def print_struct(struct, skip_sep=False, sort=False, back_line=False):
+    """
+
+    :param struct:
+    :param skip_sep:
+    :param sort:
+    :param back_line:
+    :return:
+    """
     if isinstance(struct, list):
         list_elt = [print_struct(elt) for elt in struct]
         if sort:

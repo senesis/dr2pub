@@ -60,7 +60,7 @@ import xml.etree.ElementTree as ET
 
 # Local packages
 # mpmoine_zoom_modif: import simple_Dim
-# GRAPHVIZ#from vars import simple_CMORvar, simple_Dim, process_homeVars, complement_svar_using_cmorvar, \
+# GRAPHVIZ#from vars import simple_CMORvar, simple_Dim, process_home_vars, complement_svar_using_cmorvar, \
 # GRAPHVIZ#                multi_plev_suffixes, single_plev_suffixes
 # GRAPHVIZ#from grids import decide_for_grids, grid2resol, grid2desc, field_size,\
 # GRAPHVIZ#    split_frequency_for_variable, timesteps_per_freq_and_duration
@@ -1008,8 +1008,8 @@ def create_xios_aux_elmts_defs(sv, alias, table, lset, sset, end_field_defs,
     end_field_defs[grid_ref].append(rep)
 
 
-# mpmoine_last_modif:gather_AllSimpleVars: nouvelle fonction qui rassemble les operations select_CMORvars_for_lab et read_homeVars_list.
-# mpmoine_last_modif:gather_AllSimpleVars: Necessaire pour create_ping_file qui doit tenir compte des extra_Vars
+# mpmoine_last_modif:gather_all_simple_vars: nouvelle fonction qui rassemble les operations select_cmor_vars_for_lab et read_home_vars_list.
+# mpmoine_last_modif:gather_all_simple_vars: Necessaire pour create_ping_file qui doit tenir compte des extra_Vars
 def gather_AllSimpleVars(lset, expid=False, year=False, printout=False):
     mip_vars_list = select_CMORvars_for_lab(lset, expid, year, printout=printout)
     if lset['listof_home_vars']:
@@ -1217,7 +1217,7 @@ def generate_file_defs(lset, sset, year, context, cvs_path, pingfile=None,
     if printout: print_SomeStats(context, svars_per_table, skipped_vars_per_table)
 
 
-# mpmoine_petitplus: nouvelle fonction print_SomeStats (plus d'info sur les skipped_vars, nbre de vars / (shape,freq) )
+# mpmoine_petitplus: nouvelle fonction print_some_stats (plus d'info sur les skipped_vars, nbre de vars / (shape,freq) )
 def print_SomeStats(context, svars_per_table, skipped_vars_per_table):
     # --------------------------------------------------------------------
     # Print Summary: list of  considered variables per table
@@ -1479,7 +1479,7 @@ def isVertDim(sdim):
     For now, a very simple logics for interpolated vertical
     dimension identification:
     """
-    # mpmoine_future_modif: isVertDim: on utilise maintenant sv.sdims pour analyser les dimensions
+    # mpmoine_future_modif: is_vert_dim: on utilise maintenant sv.sdims pour analyser les dimensions
     test = (sdim.stdname == 'air_pressure' or sdim.stdname == 'altitude')
     return test
 
@@ -1694,7 +1694,7 @@ def analyze_cell_time_method(cm, label, table):
 
 
 #
-# mpmoine_amelioration: ajout argument 'path_special' a la fonction pingFileForRealmsList
+# mpmoine_amelioration: ajout argument 'path_special' a la fonction ping_file_for_realms_list
 def pingFileForRealmsList(context, lrealms, svars, path_special, dummy="field_atm",
                           dummy_with_shape=False, exact=False,
                           comments=False, prefix="CV_", filename=None):
@@ -1748,27 +1748,27 @@ def pingFileForRealmsList(context, lrealms, svars, path_special, dummy="field_at
     # if lset["use_area_suffix"] :
     #    lvars.sort(key=lambda x:x.label_with_area)
     # else:
-    # mpmoine_future_modif:pingFileForRealmsList: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
-    # mpmoine_zoom_modif:pingFileForRealmsList: on s'appuie sur le label_without_psuffix et non plus le label_without_area
+    # mpmoine_future_modif:ping_file_for_realms_list: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
+    # mpmoine_zoom_modif:ping_file_for_realms_list: on s'appuie sur le label_without_psuffix et non plus le label_without_area
     lvars.sort(key=lambda x: x.label_without_psuffix)
     # Remove duplicates
     uniques = [];
     last_label = ""
     for v in lvars:
-        # mpmoine_future_modif:pingFileForRealmsList: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
-        # mpmoine_zoom_modif:pingFileForRealmsList: on s'appuie sur le label_without_psuffix et non plus le label_without_area
+        # mpmoine_future_modif:ping_file_for_realms_list: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
+        # mpmoine_zoom_modif:ping_file_for_realms_list: on s'appuie sur le label_without_psuffix et non plus le label_without_area
         if v.label_without_psuffix != last_label:
             uniques.append(v)
-            # mpmoine_future_modif:pingFileForRealmsList: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
-            # mpmoine_zoom_modif:pingFileForRealmsList: on s'appuie sur le label_without_psuffix et non plus le label_without_area
+            # mpmoine_future_modif:ping_file_for_realms_list: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
+            # mpmoine_zoom_modif:ping_file_for_realms_list: on s'appuie sur le label_without_psuffix et non plus le label_without_area
             last_label = v.label_without_psuffix
     lvars = uniques
     #
     if filename is None: filename = "ping" + name + ".xml"
-    # mpmoine_future_modif:pingFileForRealmsList: typo 'filneme' -> 'filename'
+    # mpmoine_future_modif:ping_file_for_realms_list: typo 'filneme' -> 'filename'
     if filename[-4:] != ".xml": filename += ".xml"
     #
-    # mpmoine_amelioration:pingFileForRealmsList:: ajout argument 'path_special' a la fonction read_special_fields_defs + protection si path_special existe
+    # mpmoine_amelioration:ping_file_for_realms_list:: ajout argument 'path_special' a la fonction read_special_fields_defs + protection si path_special existe
     if path_special:
         specials = read_special_fields_defs(lrealms, path_special)
     else:
@@ -1786,13 +1786,13 @@ def pingFileForRealmsList(context, lrealms, svars, path_special, dummy="field_at
             fp.write("<!-- for variables which realm equals one of " \
                      + name + "-->\n")
         for v in lvars:
-            # mpmoine_future_modif:pingFileForRealmsList: pour le field_id du pingfile on s'appuie sur le 'label_without_psuffix' et non plus le label complet
-            # mpmoine_correction:pingFileForRealmsList: pour le field_id du pingfile on prend le label non ambigu s'il existe
+            # mpmoine_future_modif:ping_file_for_realms_list: pour le field_id du pingfile on s'appuie sur le 'label_without_psuffix' et non plus le label complet
+            # mpmoine_correction:ping_file_for_realms_list: pour le field_id du pingfile on prend le label non ambigu s'il existe
             if v.label_non_ambiguous:
                 label = v.label_non_ambiguous
             else:
                 label = v.label_without_psuffix
-            # mpmoine_amelioration:pingFileForRealmsList: protection si specials existe
+            # mpmoine_amelioration:ping_file_for_realms_list: protection si specials existe
             if specials and label in specials:
                 line = ET.tostring(specials[label]).replace("DX_", prefix)
                 line = line.replace("\n", "").replace("\t", "")
@@ -1803,11 +1803,11 @@ def pingFileForRealmsList(context, lrealms, svars, path_special, dummy="field_at
                          ' field_ref="')
                 if dummy:
                     # mpmoine_last_modif: svar en argument de highest_rank et non pas seulement son label_without_area
-                    # mpmoine_zoom_modif:pingFileForRealmsList: on s'appuie sur le label_without_psuffix et non plus le label_without_area
+                    # mpmoine_zoom_modif:ping_file_for_realms_list: on s'appuie sur le label_without_psuffix et non plus le label_without_area
                     shape = highest_rank(v)
                     # Bugfix for DR 1.0.1 content :
-                    # mpmoine_future_modif:pingFileForRealmsList: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
-                    # mpmoine_zoom_modif:pingFileForRealmsList: on s'appuie sur le label_without_psuffix et non plus le label_without_area
+                    # mpmoine_future_modif:ping_file_for_realms_list: on s'appuie sur le mipVar label (label_without_area) et non plus le cmorVar label
+                    # mpmoine_zoom_modif:ping_file_for_realms_list: on s'appuie sur le label_without_psuffix et non plus le label_without_area
                     if v.label_without_psuffix == 'clcalipso': shape = 'XYA'
                     if dummy is True:
                         dummys = "dummy"
@@ -1828,11 +1828,11 @@ def pingFileForRealmsList(context, lrealms, svars, path_special, dummy="field_at
         print "%3d variables written for %s" % (len(lvars), filename)
         #
         # Write axis_defs, domain_defs, ... read from relevant input/DX_ files
-        # mpmoine_amelioration:pingFileForRealmsList: protection si path_special existe
+        # mpmoine_amelioration:ping_file_for_realms_list: protection si path_special existe
         if path_special:
             for obj in ["axis", "domain", "grid"]:
                 # print "for obj "+obj
-                # mpmoine_amelioration:pingFileForRealmsList: ajout argument 'path_special' a la fonction copy_obj_from_DX_file
+                # mpmoine_amelioration:ping_file_for_realms_list: ajout argument 'path_special' a la fonction copy_obj_from_DX_file
                 copy_obj_from_DX_file(fp, obj, prefix, lrealms, path_special)
         fp.write('</context>\n')
 
@@ -2145,7 +2145,7 @@ dr_single_levels = []
 stdName2mipvarLabel = {}
 
 
-# mpmoine_last_modif:read_homeVars_list: fonction modifiee pour accepter des extra_Tables
+# mpmoine_last_modif:read_home_vars_list: fonction modifiee pour accepter des extra_Tables
 def read_homeVars_list(hmv_file, expid, mips, dq, path_extra_tables=None):
     """
     A function to get HOME variables that are not planned in the CMIP6 DataRequest but
@@ -2193,7 +2193,7 @@ def read_homeVars_list(hmv_file, expid, mips, dq, path_extra_tables=None):
             home_var.label_with_area = home_var.label
             if hmv_type == 'perso':
                 home_var.mip_era = 'PERSO'
-                # mpmoine_future_modif:read_homeVars_list: valorisation de home_var.label_without_psuffix
+                # mpmoine_future_modif:read_home_vars_list: valorisation de home_var.label_without_psuffix
                 home_var.label_without_psuffix = home_var.label
             if home_var.mip != "ANY":
                 if home_var.mip in mips:
@@ -2215,7 +2215,7 @@ def read_homeVars_list(hmv_file, expid, mips, dq, path_extra_tables=None):
     return homevars
 
 
-# mpmoine_last_modif:read_extraTable: nouvelle fonction pour lire les extra_Tables
+# mpmoine_last_modif:read_extra_table: nouvelle fonction pour lire les extra_Tables
 def read_extraTable(path, table, dq, printout=False):
     """
     A function to get variables contained in an EXTRA Table that are is planned in the CMIP6 DataRequest but
@@ -2249,7 +2249,7 @@ def read_extraTable(path, table, dq, printout=False):
         for g in dq.coll['grids'].items:
             dim2dimid[g.label] = g.uid
     #
-    # mpmoine_correction:read_extraTable: Solution de Martin Juckes du 04/05/2017 en utilisant cids necessaire a partir de la version 01.00.08 => plus besoin de la fonction 'cids2singlev'
+    # mpmoine_correction:read_extra_table: Solution de Martin Juckes du 04/05/2017 en utilisant cids necessaire a partir de la version 01.00.08 => plus besoin de la fonction 'cids2singlev'
     if not dr_single_levels:
         for struct in dq.coll['structure'].items:
             spshp = dq.inx.uid[struct.spid]
@@ -2273,7 +2273,7 @@ def read_extraTable(path, table, dq, printout=False):
     with open(json_table, "r") as jt:
         json_tdata = jt.read()
         tdata = json.loads(json_tdata)
-        # mpmoine_correction:read_extraTable: read_extraTable: ajout de precautions 'NOT-SET' pour certains attributs pour eviter les chaines vides qui font planter XIOS (">  <")
+        # mpmoine_correction:read_extra_table: read_extra_table: ajout de precautions 'NOT-SET' pour certains attributs pour eviter les chaines vides qui font planter XIOS (">  <")
         for k, v in tdata["variable_entry"].iteritems():
             extra_var = simple_CMORvar()
             extra_var.type = 'extra'
@@ -2326,8 +2326,8 @@ def read_extraTable(path, table, dq, printout=False):
                 print "Warning: spatial shape corresponding to ", drdims, "for variable", v["out_name"], \
                     "in Table", table, " not found in DR."
             # list of spatial dimension identifiers
-            # mpmoine_future_modif:read_extraTable: introduction de extra_var.sdims, ajout lecture des dimensions dans
-            # mpmoine_future_modif:read_extraTable: une table de coordinates quand pas trouvees dans la DR
+            # mpmoine_future_modif:read_extra_table: introduction de extra_var.sdims, ajout lecture des dimensions dans
+            # mpmoine_future_modif:read_extra_table: une table de coordinates quand pas trouvees dans la DR
             dr_dimids = []
             for d in all_dr_dims:
                 if dim2dimid.has_key(d):
@@ -2353,8 +2353,8 @@ def read_extraTable(path, table, dq, printout=False):
                     extra_var.sdims.update({extra_sdim.label: extra_sdim})
                     print "Info: dimid corresponding to ", d, "for variable", v["out_name"], \
                         "in Table", table, " not found in DR => read it in extra coordinates Table: ", extra_sdim.stdname, extra_sdim.requested
-            # mpmoine_future_modif: read_extraTable: suppression de extra_var.dimids -> elargi avec extra_var.sdims
-            # mpmoine_future_modif:read_extraTable: on renseigne l'attribut label_without_psuffix (doit etre fait apres la valorisation de sdims)
+            # mpmoine_future_modif: read_extra_table: suppression de extra_var.dimids -> elargi avec extra_var.sdims
+            # mpmoine_future_modif:read_extra_table: on renseigne l'attribut label_without_psuffix (doit etre fait apres la valorisation de sdims)
             extra_var.label_without_psuffix = Remove_pSuffix(extra_var, multi_plev_suffixes, single_plev_suffixes,
                                                              realms='atmos aerosol atmosChem')
 
@@ -2365,7 +2365,7 @@ def read_extraTable(path, table, dq, printout=False):
 
 
 def get_SpatialAndTemporal_Shapes(cmvar, dq):
-    # mpmoine_last_modif:get_SpatialAndTemporal_Shapes: le try/except n'etait pas la bonne solution
+    # mpmoine_last_modif:get_spatial_and_temporal_shapes: le try/except n'etait pas la bonne solution
     spatial_shape = False
     temporal_shape = False
     if cmvar.stid == "__struct_not_found_001__":
@@ -2384,7 +2384,7 @@ def get_SpatialAndTemporal_Shapes(cmvar, dq):
     return [spatial_shape, temporal_shape]
 
 
-# mpmoine_last_modif: process_homeVars: argument supplementaire 'path_extra_tables' et expid au lieu de lset
+# mpmoine_last_modif: process_home_vars: argument supplementaire 'path_extra_tables' et expid au lieu de lset
 def process_homeVars(lset, mip_vars_list, dq, expid=False, printout=False):
     printmore = False
     # Read HOME variables
@@ -2454,7 +2454,7 @@ def process_homeVars(lset, mip_vars_list, dq, expid=False, printout=False):
                                              " but in reality is cmor => Not taken into account."
                 dr2xml_error("Abort: HOMEVar is anounced as perso but " \
                              "should be cmor.")
-        # mpmoine_last_modif: process_homeVars: ajout du cas type='extra'
+        # mpmoine_last_modif: process_home_vars: ajout du cas type='extra'
         elif hv.type == 'extra':
             if hv.Priority <= lset["max_priority"]:
                 if printmore: print "Info:", hv_info, "HOMEVar is read in an extra Table with priority " \
@@ -2506,7 +2506,7 @@ def complement_svar_using_cmorvar(svar, cmvar, dq):
     The label for SVAR will be suffixed by an area name it the
     MIPvarname is ambiguous for that
 
-    Used by get_corresp_CMORvar and by select_CMORvars_for_lab
+    Used by get_corresp_cmor_var and by select_cmor_vars_for_lab
     """
     global ambiguous_mipvarnames
     if ambiguous_mipvarnames is None:
@@ -2590,7 +2590,7 @@ def complement_svar_using_cmorvar(svar, cmvar, dq):
                             all_dimids += cids
                     # mpmoine_future_modif:complement_svar_using_cmorvar: on rajoute les single levels dans le traitement des dimensions (dimids->all_dimids)
                     for dimid in all_dimids:
-                        # mpmoine_future_modif:complement_svar_using_cmorvar: on valorise svar.sdims avec la fonction get_simpleDim_from_DimId
+                        # mpmoine_future_modif:complement_svar_using_cmorvar: on valorise svar.sdims avec la fonction get_simple_dim_from_dim_id
                         sdim = get_simpleDim_from_DimId(dimid, dq)
                         svar.sdims.update({sdim.label: sdim})
                 except:
@@ -2615,7 +2615,7 @@ def complement_svar_using_cmorvar(svar, cmvar, dq):
                 # TBS# svar.label=svar.label+"_"+area
                 svar.label_non_ambiguous = svar.label + "_" + area
     # mpmoine_future_modif:complement_svar_using_cmorvar: on renseigne l'attribut label_without_psuffix (doit etre fait apres la valorisation de sdims)
-    # mpmoine_further_zoom_modif:complement_svar_using_cmorvar: deplacement de Remove_pSuffix apres la levee d'ambiguite 'where something' (verifie: aucune des variables ambigues n'est demandee en plev)
+    # mpmoine_further_zoom_modif:complement_svar_using_cmorvar: deplacement de remove_p_suffix apres la levee d'ambiguite 'where something' (verifie: aucune des variables ambigues n'est demandee en plev)
     # removing pressure suffix must occur after raising ambuguities (add of area suffix) because this 2 processes cannot be cummulate at this stage.
     # this is acceptable since none of the variables requeted on pressure levels have ambiguous names.
     svar.label_without_psuffix = Remove_pSuffix(svar, multi_plev_suffixes, single_plev_suffixes,
@@ -2627,7 +2627,7 @@ def complement_svar_using_cmorvar(svar, cmvar, dq):
     svar.mip_era = 'CMIP6'
 
 
-# momoine_future_modif: nouvelle fonction get_simpleDim_from_DimId utilisee par complement_svar_using_cmorvar et read_extra_Tables
+# momoine_future_modif: nouvelle fonction get_simple_dim_from_dim_id utilisee par complement_svar_using_cmorvar et read_extra_Tables
 def get_simpleDim_from_DimId(dimid, dq):
     sdim = simple_Dim()
     d = dq.inx.uid[dimid]
@@ -2642,17 +2642,17 @@ def get_simpleDim_from_DimId(dimid, dq):
     return sdim
 
 
-# mpmoine_future_modif: nouvelle fonction Remove_pSuffix
+# mpmoine_future_modif: nouvelle fonction remove_p_suffix
 def Remove_pSuffix(svar, mlev_sfxs, slev_sfxs, realms):
     #
     # remove suffixes only if both suffix of svar.label *and* suffix of one of the svar.dims.label  match the search suffix
     # to avoid truncation of variable names like 'ch4' requested on 'plev19', where '4' does not stand for a plev set
     #
-    # mpmoine_zoom_modif:Remove_pSuffix: correction de la methode de suppression du suffixe de pression (corrige notamment ta23 -> ta2, 3 etant dans la liste des suffixes)
+    # mpmoine_zoom_modif:remove_p_suffix: correction de la methode de suppression du suffixe de pression (corrige notamment ta23 -> ta2, 3 etant dans la liste des suffixes)
     import re
     r = re.compile("([a-zA-Z]+)([0-9]+)")
     #
-    # mpmoine_correction:write_xios_file_def_for_svar:Remove_pSuffix: suppression des terminaisons en "Clim" le cas echant
+    # mpmoine_correction:write_xios_file_def_for_svar:remove_p_suffix: suppression des terminaisons en "Clim" le cas echant
     split_label = svar.label.split("Clim")
     label_out = split_label[0]
     #

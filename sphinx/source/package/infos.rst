@@ -10,4 +10,4 @@
 
 
 
-.. autofunction:: infos.print_SomeStats
+.. autofunction:: infos.print_some_stats

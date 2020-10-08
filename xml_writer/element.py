@@ -13,9 +13,9 @@ from copy import deepcopy, copy
 
 from xml_writer.beacon import Beacon
 from xml_writer.header import Header
-from xml_writer.comment import _find_xml_comment, Comment
+from xml_writer.comment import Comment
 from xml_writer.utils import encode_if_needed, decode_if_needed, _generic_dict_regexp, \
-    _build_dict_attrib, _find_text, print_if_needed
+    _build_dict_attrib, print_if_needed
 
 
 class Element(Beacon):
@@ -244,8 +244,8 @@ def _find_one_part_element(xml_string, verbose=False):
 
 
 #: XML two parts regexp
-_xml_string_first_element_replace = r'(?P<all_begin>\s?(?P<begin><\s?(?P<tag>{}){}\s?>)\s?)'.format('{}',
-                                                                                                    _generic_dict_regexp)
+_xml_string_first_element_replace = \
+    r'(?P<all_begin>\s?(?P<begin><\s?(?P<tag>{}){}\s?>)\s?)'.format('{}', _generic_dict_regexp)
 _xml_string_init_element_replace = r'^'+_xml_string_first_element_replace
 _xml_init_two_parts_element_regexp = re.compile(_xml_string_init_element_replace.format(r"\w+\s?"))
 _xml_string_end_element_replace = r'(?P<all_end>\s?(?P<end></\s?{}\s?>)\s?)'

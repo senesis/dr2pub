@@ -14,7 +14,7 @@
 
 .. autofunction:: dr2xml.generate_file_defs_inner
 
-.. autofunction:: RequestItemInclude
+.. autofunction:: request_item_include
 
 .. autofunction:: realm_is_processed
    

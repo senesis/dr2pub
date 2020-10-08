@@ -31,7 +31,7 @@ from settings_interface import get_variable_from_lset_with_default, get_variable
 from dr_interface import get_DR_version
 
 from xml_interface import create_xml_element, create_xml_sub_element, create_string_from_xml_element, \
-    add_xml_comment_to_element, create_pretty_xml_doc
+    remove_subelement_in_xml_element, add_xml_comment_to_element, create_pretty_xml_doc
 
 # Settings tools
 from analyzer import DRgrid2gridatts, analyze_cell_time_method, freq2datefmt, longest_possible_period, \
@@ -327,8 +327,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             parent_activity_id = get_variable_from_sset_with_default("activity_id", exp_entry["parent_activity_id"])
         if isinstance(parent_activity_id, list) and len(parent_activity_id) > 1:
             parent_activity_id = reduce(lambda x, y: x+" "+y, parent_activity_id)
-        parent_experiment_id =  get_variable_from_sset_else_lset_with_default("parent_experiment_id",
-                                                                              default=exp_entry['parent_experiment_id'])
+        parent_experiment_id = get_variable_from_sset_else_lset_with_default("parent_experiment_id",
+                                                                             default=exp_entry['parent_experiment_id'])
         if isinstance(parent_experiment_id, list) and len(parent_experiment_id) > 1:
             parent_experiment_id = reduce(lambda x, y: x+" "+y, parent_experiment_id)
         required_components = exp_entry['required_model_components']  # .split(" ")
@@ -394,7 +394,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     if sv.type in ["perso", "dev"]:
         with open(list_perso_and_dev_file_name, mode="a", encoding="utf-8") as list_perso_and_dev:
             list_perso_and_dev.write(".*{}.*\n".format("_".join([varname_for_filename, table, source_id,
-                                                               expid_in_filename, member_id, grid_label])))
+                                                                 expid_in_filename, member_id, grid_label])))
     #
     if not (is_key_in_lset('mip_era') or is_key_in_sset("mip_era")):
         further_info_url = "https://furtherinfo.es-doc.org/%s.%s.%s.%s.%s.%s" % (
@@ -542,8 +542,9 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     wr(xml_file, 'grid', grid_description)
     wr(xml_file, 'grid_label', grid_label)
     wr(xml_file, 'nominal_resolution', grid_resolution)
-    comment = get_variable_from_lset_with_default('comment', '') +\
-              " " + get_variable_from_sset_with_default('comment', '') + dynamic_comment
+    comment = " ".join([get_variable_from_lset_with_default('comment', ''),
+                        get_variable_from_sset_with_default('comment', ''),
+                        dynamic_comment])
     wr(xml_file, 'comment', comment)
     wr(xml_file, 'history', sset, default='none')
     wr(xml_file, "initialization_index", initialization_index, num_type="int")
@@ -1003,7 +1004,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     desc = sv.description
     # if desc :
     # desc=desc.replace(">","&gt;").replace("<","&lt;").replace("&","&amp;").replace("'","&apos;").replace('"',"&quot;")
-    if desc:
+    if desc is not None and desc:
         desc = desc.replace(">", "&gt;").replace("<", "&lt;").strip()
     rep.append(wrv("description", desc))
     #
@@ -1177,6 +1178,63 @@ def is_singleton(sdim):
                or (sdim.label == "typewetla")  # The latter is a bug in DR01.00.21 : typewetla has no value there
 
 
+def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_axis, change_scalar=True):
+    """
+    Returns a grid_definition with id GRIDOUT_ID from an input grid definition
+    GRIDIN_DEF, by adding a reference to scalar SCALAR_ID
+
+    If CHANGE_SCALAR is True and GRIDIN_DEF has an axis with an extract_axis child,
+    remove it (because it is assumed to be a less well-defined proxy for the DR scalar
+
+    If such a reference is already included in that grid definition, just return
+    input def
+
+    if REMOVE_AXIS is True, if GRIDIN_DEF already includes an axis, remove it for output grid
+
+    Note : name of input_grid is not changed in output_grid
+
+    """
+    rep = gridin_def.copy()
+    test_scalar_in_grid = False
+    for child in rep:
+        if child.tag == "scalar":
+            if "scalar_ref" in child.attrib and child.attrib["scalar_ref"] == scalar_id:
+                test_scalar_in_grid = True
+    if test_scalar_in_grid:
+        return rep
+    # TBD : in change_scalar : discard extract_axis only if really relevant (get the right axis)
+    # TBD : in change_scalar : preserve ordering of domains/axes...
+    if change_scalar:
+        count = 0
+        children_to_remove = list()
+        for child in rep:
+            test_child = False
+            if child.tag == "scalar":
+                for scalar_child in child:
+                    if scalar_child.tag == "extract_axis":
+                        test_child = True
+            if test_child:
+                count += 1
+                children_to_remove.append(child)
+        for child_to_remove in children_to_remove:
+            rep.remove(child_to_remove)
+    if "id" in rep.attrib:
+        rep.attrib["id"] = gridout_id
+        scalar_dict = OrderedDict()
+        scalar_dict["scalar_ref"] = scalar_id
+        scalar_dict["name"] = scalar_name
+        create_xml_sub_element(xml_element=rep, tag="scalar", attrib=scalar_dict)
+    else:
+        raise dr2xml_error("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
+    # Remove any axis if asked for
+    if remove_axis:
+        remove_subelement_in_xml_element(xml_element=rep, tag="axis")
+        # if count==1 :
+        #    print "Info: axis has been removed for scalar %s (%s)"%(scalar_name,scalar_id)
+        #    print "grid_def="+rep
+    return rep
+
+
 def wrv(name, value, num_type="string"):
     """
     Create a string corresponding of a variable for Xios files.
@@ -1239,7 +1297,8 @@ def write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, f
     add_xml_comment_to_element(element=xml_context, text="CMIP6 Data Request version {}".format(get_DR_version()))
     add_xml_comment_to_element(element=xml_context, text="CMIP6-CV version {}".format("??"))
     add_xml_comment_to_element(element=xml_context,
-                               text="CMIP6_conventions_version {}".format(get_config_variable("CMIP6_conventions_version")))
+                               text="CMIP6_conventions_version {}".format(
+                                   get_config_variable("CMIP6_conventions_version")))
     add_xml_comment_to_element(element=xml_context, text="dr2xml version {}".format(get_config_variable("version")))
     add_xml_comment_to_element(element=xml_context,
                                text="\n".join(["Lab_and_model settings", format_dict_for_printing("lset")]))

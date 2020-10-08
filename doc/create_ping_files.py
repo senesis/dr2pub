@@ -5,9 +5,9 @@
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-# from dr2xml import select_CMORvars_for_lab, pingFileForRealmsList
-from pingfiles_interface import pingFileForRealmsList
-from vars_selection import gather_AllSimpleVars
+# from dr2xml import select_cmor_vars_for_lab, ping_file_for_realms_list
+from pingfiles_interface import ping_file_for_realms_list
+from vars_selection import gather_all_simple_vars
 
 # In[ ]:
 
@@ -118,14 +118,14 @@ settings["excluded_vars"] = []
 
 # In[ ]:
 
-# svars=select_CMORvars_for_lab(settings, printout=True)
-svars = gather_AllSimpleVars(printout=True)
+# svars=select_cmor_vars_for_lab(settings, printout=True)
+svars = gather_all_simple_vars(printout=True)
 
 # ## Doc for ping files create function
 
 # In[ ]:
 
-help(pingFileForRealmsList)
+help(ping_file_for_realms_list)
 
 # When using function create_ping_files with argument exact=False, each ping file will adress all variables which
 # realm includes or is included in one of the strings in a realms set  <br><br> e.g for set ['ocean','seaIce'],
@@ -144,10 +144,10 @@ my_dir = "output_labs/" + lab + "/"
 for my_context in settings["realms_per_context"].keys():
     print("=== CREATING PINGFILE FOR CONTEXT", my_context)
     realms = settings['realms_per_context'][my_context]
-    pingFileForRealmsList(my_context, realms, svars, settings["path_special_defs"],
-                          comments=" ", exact=False, dummy=True,
-                          prefix=settings['ping_variables_prefix'],
-                          filename=my_dir + 'ping_' + my_context + '.xml', dummy_with_shape=True)
+    ping_file_for_realms_list(my_context, realms, svars, settings["path_special_defs"],
+                              comments=" ", exact=False, dummy=True,
+                              prefix=settings['ping_variables_prefix'],
+                              filename=my_dir + 'ping_' + my_context + '.xml', dummy_with_shape=True)
 
 # In[ ]:
 
@@ -161,8 +161,8 @@ single_realms = [['ocean'], ['seaIce'], ['ocnBgchem'], ['atmos'], ['land'], ['la
 for rs in single_realms:
     # print rs[0]
     print("=== CREATING PINGFILE FOR SINGLE REALM", rs)
-    pingFileForRealmsList(rs[0], rs, svars, settings["path_special_defs"], prefix=settings['ping_variables_prefix'],
-                          comments=" ", exact=False, dummy=True, dummy_with_shape=True,
-                          filename=my_dir + 'ping_%s.xml' % rs[0])
+    ping_file_for_realms_list(rs[0], rs, svars, settings["path_special_defs"], prefix=settings['ping_variables_prefix'],
+                              comments=" ", exact=False, dummy=True, dummy_with_shape=True,
+                              filename=my_dir + 'ping_%s.xml' % rs[0])
 
 # In[ ]:

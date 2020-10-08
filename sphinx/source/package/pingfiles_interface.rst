@@ -16,7 +16,7 @@
 
 .. autofunction:: pingfiles_interface.get_xml_childs
 
-.. autofunction:: pingfiles_interface.pingFileForRealmsList
+.. autofunction:: pingfiles_interface.ping_file_for_realms_list
 
 .. autofunction:: pingfiles_interface.read_special_fields_defs
 

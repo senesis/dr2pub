@@ -348,17 +348,17 @@ def id2grid(field_id, index, printout=False):
             else:
                 # if printout: print("field %s grid reference is %s
                 # but that field has no grid"%(field_id,grid_ref_field_id))
-                raise Xparse_error(
+                raise XparseError(
                     "field %s grid reference is %s but that field no grid" % (field_id, grid_ref_field_id))
         else:
             # if printout: print("field %s has no grid_ref"%(field_id))
-            raise Xparse_error("field %s has no grid_ref" % field_id)
+            raise XparseError("field %s has no grid_ref" % field_id)
     else:
         # if printout: print("field %s is not known"%field_id)
-        raise Xparse_error("field %s is not known" % field_id)
+        raise XparseError("field %s is not known" % field_id)
 
 
-def idHasExprWithAt(field_id, index, printout=False):
+def id_has_expr_with_at(field_id, index, printout=False):
     """
     Returns True if field has an expr attribute with includes an @
     """
@@ -392,11 +392,11 @@ if False:
         # print "Grid id is :"+grid.attrib['id']
         print(create_string_from_xml_element(grid))
         grid_string = create_string_from_xml_element(grid)
-        new_grid_string = re.sub('axis_ref= *.([\w_])*.', 'axis_ref="axis_autre"', grid_string)
+        new_grid_string = re.sub(r'axis_ref= *.([\w_])*.', 'axis_ref="axis_autre"', grid_string)
         print(new_grid_string)
 
 
-class Xparse_error(Exception):
+class XparseError(Exception):
     """
     Xparse exceptions class.
     """

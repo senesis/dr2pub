@@ -5,3 +5,4 @@ sphinx
 dreqPy
 coverage
 xlsxwriter
+six

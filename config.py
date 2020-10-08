@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import sys
 
 # Utilities
-from utils import dr2xml_error
+from utils import Dr2xmlError
 
 
 # Python version
@@ -44,7 +44,7 @@ def set_config_variable(variable, value):
         global cell_method_warnings
         cell_method_warnings = value
     else:
-        raise dr2xml_error("Can not set configuration variable %s." % variable)
+        raise Dr2xmlError("Can not set configuration variable %s." % variable)
 
 
 def get_config_variable(variable):
@@ -62,7 +62,7 @@ def get_config_variable(variable):
     elif variable == "cell_method_warnings":
         return cell_method_warnings
     else:
-        raise dr2xml_error("Unknown configuration variable %s." % variable)
+        raise Dr2xmlError("Unknown configuration variable %s." % variable)
 
 
 def add_value_in_list_config_variable(variable, value):
@@ -73,4 +73,4 @@ def add_value_in_list_config_variable(variable, value):
         global cell_method_warnings
         cell_method_warnings.append(value)
     else:
-        raise dr2xml_error("Could not add a value to configuration variable %s." % variable)
+        raise Dr2xmlError("Could not add a value to configuration variable %s." % variable)

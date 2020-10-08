@@ -11,7 +11,7 @@ import copy
 from collections import OrderedDict
 from six import string_types
 
-from utils import dr2xml_error, decode_if_needed, print_struct
+from utils import Dr2xmlError, decode_if_needed, print_struct
 
 
 # Initial simulation (sset) and laboratory (lset) dictionaries
@@ -20,6 +20,12 @@ lset = None
 
 
 def initialize_dict(new_lset=None, new_sset=None):
+    """
+
+    :param new_lset:
+    :param new_sset:
+    :return:
+    """
     global sset, lset
     if new_lset is not None:
         lset = decode_strings_in_dict(new_lset)
@@ -28,6 +34,11 @@ def initialize_dict(new_lset=None, new_sset=None):
 
 
 def decode_strings(struct):
+    """
+
+    :param struct:
+    :return:
+    """
     if isinstance(struct, (int, float)):
         return struct
     elif isinstance(struct, string_types):
@@ -48,6 +59,11 @@ def decode_strings(struct):
 
 
 def decode_strings_in_dict(init_dict):
+    """
+
+    :param init_dict:
+    :return:
+    """
     new_dictionary = OrderedDict()
     for key in sorted(list(init_dict)):
         value = init_dict[key]
@@ -57,11 +73,21 @@ def decode_strings_in_dict(init_dict):
 
 
 def decode_strings_in_set(init_set):
+    """
+
+    :param init_set:
+    :return:
+    """
     new_set = set(decode_strings_in_list(list(init_set)))
     return new_set
 
 
 def decode_strings_in_list(init_list):
+    """
+
+    :param init_list:
+    :return:
+    """
     new_list = list()
     for value in init_list:
         new_list.append(decode_strings(value))
@@ -69,6 +95,11 @@ def decode_strings_in_list(init_list):
 
 
 def decode_strings_in_tuple(init_tuple):
+    """
+
+    :param init_tuple:
+    :return:
+    """
     new_tuple = list()
     for value in init_tuple:
         new_tuple.append(value)
@@ -78,6 +109,11 @@ def decode_strings_in_tuple(init_tuple):
 
 
 def format_dict_for_printing(dictionary):
+    """
+
+    :param dictionary:
+    :return:
+    """
     if dictionary == "lset":
         dictionary = lset
     elif dictionary == "sset":
@@ -100,6 +136,12 @@ def get_variable_from_sset_else_lset_with_default(key_sset, key_lset=None, defau
 
 
 def get_variable_from_sset_else_lset_without_default(key_sset, key_lset=None):
+    """
+
+    :param key_sset:
+    :param key_lset:
+    :return:
+    """
     if key_lset is None:
         key_lset = key_sset
     if sset and key_sset in sset:
@@ -109,62 +151,122 @@ def get_variable_from_sset_else_lset_without_default(key_sset, key_lset=None):
 
 
 def get_variable_from_lset_with_default(key, default=None):
+    """
+
+    :param key:
+    :param default:
+    :return:
+    """
     return lset.get(key, default)
 
 
 def get_variable_from_lset_without_default(*args):
+    """
+
+    :param args:
+    :return:
+    """
     return get_variable_from_dict_without_default(dictionary=lset, args=args)
 
 
 def get_variable_from_dict_without_default(dictionary, args):
+    """
+
+    :param dictionary:
+    :param args:
+    :return:
+    """
     if len(args) > 1:
         newdict = copy.deepcopy(dictionary[args[0]])
         return get_variable_from_dict_without_default(dictionary=newdict, args=args[1:])
     elif len(args) == 1:
         return dictionary[args[0]]
     else:  # Should not happen
-        raise dr2xml_error("Could not guess which key to look for.")
+        raise Dr2xmlError("Could not guess which key to look for.")
 
 
 def get_variable_from_sset_with_default(key, default=None):
+    """
+
+    :param key:
+    :param default:
+    :return:
+    """
     return sset.get(key, default)
 
 
 def get_variable_from_sset_with_default_in_sset(key, key_default):
+    """
+
+    :param key:
+    :param key_default:
+    :return:
+    """
     return sset.get(key, sset[key_default])
 
 
 def get_variable_from_sset_without_default(*args):
+    """
+
+    :param args:
+    :return:
+    """
     return get_variable_from_dict_without_default(dictionary=sset, args=args)
 
 
 def is_key_in_lset(key):
+    """
+
+    :param key:
+    :return:
+    """
     return lset and (key in lset)
 
 
 def is_key_in_sset(key):
+    """
+
+    :param key:
+    :return:
+    """
     return sset and (key in sset)
 
 
 def is_sset_not_None():
+    """
+
+    :return:
+    """
     return sset
 
 
 def get_lset_iteritems():
+    """
+
+    :return:
+    """
     return lset.items()
 
 
 def get_sset_iteritems():
+    """
+
+    :return:
+    """
     return sset.items()
 
 
 def get_source_id_and_type():
+    """
+
+    :return:
+    """
     if "configuration" in sset and "configurations" in lset:
         if sset["configuration"] in lset["configurations"]:
             source_id, source_type, unused = lset["configurations"][sset["configuration"]]
         else:
-            raise dr2xml_error("configuration %s is not known (allowed values are :)" %
-                               sset["configuration"] + repr(lset["configurations"]))
+            raise Dr2xmlError("configuration %s is not known (allowed values are :)" %
+                              sset["configuration"] + repr(lset["configurations"]))
     else:
         source_id = sset['source_id']
         if 'source_type' in sset:
@@ -173,5 +275,5 @@ def get_source_id_and_type():
             if 'source_types' in lset:
                 source_type = lset['source_types'][source_id]
             else:
-                raise dr2xml_error("Fatal: No source-type found - Check inputs")
+                raise Dr2xmlError("Fatal: No source-type found - Check inputs")
     return source_id, source_type
