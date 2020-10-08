@@ -14,7 +14,7 @@ from collections import OrderedDict
 import re
 
 # Utilities
-from utils import dr2xml_error
+from utils import Dr2xmlError
 
 # Global variables and configuration tools
 from config import get_config_variable
@@ -50,7 +50,7 @@ def get_grid_def(grid_id, grid_defs):
             # Grid defined through xml
             grid_def = context_index[grid_id]
         else:
-            raise dr2xml_error("Cannot guess a grid def for %s" % grid_id)
+            raise Dr2xmlError("Cannot guess a grid def for %s" % grid_id)
             grid_def = None
     return grid_def
 
@@ -64,7 +64,7 @@ def guess_simple_domain_grid_def(grid_id):
     regexp = get_variable_from_lset_without_default("simple_domain_grid_regexp")
     domain_id, n = re.subn(regexp[0], r'\%d' % regexp[1], grid_id)
     if n != 1:
-        raise dr2xml_error("Cannot identify domain name in grid_id %s using regexp %s" % (grid_id, regexp[0]))
+        raise Dr2xmlError("Cannot identify domain name in grid_id %s using regexp %s" % (grid_id, regexp[0]))
     grid_def = create_xml_element(tag="grid", attrib=OrderedDict(id=grid_id))
     create_xml_sub_element(xml_element=grid_def, tag="domain", attrib=OrderedDict(domain_ref=domain_id))
     print("Warning: Guess that structure for grid %s is : %s" % (grid_id, grid_def))
@@ -102,8 +102,8 @@ def create_grid_def(grid_defs, axis_def, axis_name, src_grid_id):
         else:
             target_grid_def.append(grid_child)
     if not is_axis_changed:
-        raise dr2xml_error("Fatal: cannot find an axis ref in grid %s : %s " %
-                           (src_grid_id, create_string_from_xml_element(src_grid_def)))
+        raise Dr2xmlError("Fatal: cannot find an axis ref in grid %s : %s " %
+                          (src_grid_id, create_string_from_xml_element(src_grid_def)))
     target_grid_def.attrib["id"] = target_grid_id
     grid_defs[target_grid_id] = target_grid_def
     return target_grid_id
@@ -140,7 +140,7 @@ def create_axis_def(sdim, axis_defs, field_defs):
         axis_dict = OrderedDict()
         axis_dict["id"] = sdim.label
         if sdim.positive not in [None, ""]:
-            axis_dict['positive']= sdim.positive
+            axis_dict['positive'] = sdim.positive
         if n_glo > 1:
             # Case of a non-degenerated vertical dimension (not a singleton)
             axis_dict["n_glo"] = str(n_glo)
@@ -220,7 +220,7 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
     -  returns its id, which is
     """
     if src_grid_id is None:
-        raise dr2xml_error("deprecated")
+        raise Dr2xmlError("deprecated")
     else:
         src_grid = get_grid_def_with_lset(src_grid_id, grid_defs)
     target_grid_id = src_grid_id + "_" + domain_id
@@ -241,7 +241,7 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
                 target_grid_xml[rank].attrib["domain_ref"] = domain_id
             is_domain_found = True
     if not is_domain_found:
-        raise dr2xml_error("Fatal: cannot find a domain to replace by %s in src_grid_string %s" % (domain_id, src_grid))
+        raise Dr2xmlError("Fatal: cannot find a domain to replace by %s in src_grid_string %s" % (domain_id, src_grid))
     target_grid_xml.attrib["id"] = target_grid_id
     grid_defs[target_grid_id] = target_grid_xml
     # print "target_grid_id=%s : %s"%(target_grid_id,target_grid_string)
@@ -331,7 +331,7 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
             dim_id = 'dim:{}'.format(dr_axis_id)
             # print "in change_axis for %s %s"%(grid_id,dim_id)
             if dim_id not in get_uid():  # This should be a dimension !
-                raise dr2xml_error("Value %s in 'non_standard_axes' is not a DR dimension id" % dr_axis_id)
+                raise Dr2xmlError("Value %s in 'non_standard_axes' is not a DR dimension id" % dr_axis_id)
             dim = get_uid(dim_id)
             # We don't process scalars here
             if dim.value == '' or dim.label == "scatratio":
@@ -340,7 +340,7 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
                 axes_to_change.append((axis_ref, axis_id, axis_name))
                 output_grid_id += "_" + dim.label
             else:
-                raise dr2xml_error("Dimension %s is scalar and shouldn't be quoted in 'non_standard_axes'" % dr_axis_id)
+                raise Dr2xmlError("Dimension %s is scalar and shouldn't be quoted in 'non_standard_axes'" % dr_axis_id)
     if len(axes_to_change) == 0:
         return grid_id
     grid_def_rep = grid_def.copy()
@@ -420,7 +420,7 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
     return axis_id, axis_name
 
 
-def isVertDim(sdim):
+def is_vert_dim(sdim):
     """
     Returns True if dim represents a dimension for which we want
     an Xios interpolation.
@@ -470,7 +470,7 @@ def create_output_grid(ssh, grid_defs, domain_defs, target_hgrid_id, margs):
             # for that variable, except for a change in the hgrid/domain
             grid_ref = change_domain_in_grid(target_hgrid_id, grid_defs)
             if grid_ref is False or grid_ref is None:
-                raise dr2xml_error("Fatal: cannot create grid_def for %s with hgrid=%s" % (alias, target_hgrid_id))
+                raise Dr2xmlError("Fatal: cannot create grid_def for %s with hgrid=%s" % (alias, target_hgrid_id))
     elif ssh == 'TR-na' or ssh == 'TRS-na':  # transects,   oce or SI
         pass
     elif ssh[0:3] == 'YB-':  # basin zonal mean or section
@@ -480,7 +480,7 @@ def create_output_grid(ssh, grid_defs, domain_defs, target_hgrid_id, margs):
     elif ssh == 'na-A':  # only used for rlu, rsd, rsu ... in Efx ????
         pass
     else:
-        raise dr2xml_error(
+        raise Dr2xmlError(
             "Fatal: Issue with un-managed spatial shape %s for variable %s in table %s" % (ssh, sv.label, table))
     return grid_ref
 

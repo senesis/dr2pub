@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from collections import OrderedDict, namedtuple
 
 # Utilities
-from utils import dr2xml_error, print_struct
+from utils import Dr2xmlError, print_struct
 
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_sset_else_lset_without_default, get_variable_from_lset_with_default, \
@@ -24,8 +24,8 @@ from dr_interface import get_request_by_id_by_sect, get_uid, get_experiment_labe
 from grids_selection import decide_for_grids
 
 # Variables tools
-from vars_home import complement_svar_using_cmorvar, process_homeVars
-from vars_cmor import analyze_priority, simple_CMORvar
+from vars_home import complement_svar_using_cmorvar, process_home_vars
+from vars_cmor import analyze_priority, SimpleCMORVar
 
 
 print_multiple_grids = False
@@ -34,7 +34,7 @@ grid_choice = None
 
 # global variable : the list of Request Links which apply for 'our' MIPS
 # and which are not explicitly excluded using settings
-# It is set in select_CMORvars_for_lab and used in endyear_for_CMORvar
+# It is set in select_cmor_vars_for_lab and used in endyear_for_cmor_var
 global_rls = None
 rls_for_all_experiments = None
 sc = None
@@ -64,7 +64,7 @@ def get_sc():
     return sc
 
 
-def endyear_for_CMORvar(cv, expt, year, printout=False):
+def endyear_for_cmor_var(cv, expt, year, printout=False):
     """
     For a CMORvar, returns the largest year in the time slice(s)
     of those requestItems which apply for experiment EXPT and which
@@ -84,36 +84,36 @@ def endyear_for_CMORvar(cv, expt, year, printout=False):
     pmax = get_variable_from_sset_else_lset_without_default('max_priority')
 
     # 1- Get the RequestItems which apply to CmorVar
-    rVarsUid = get_request_by_id_by_sect(cv.uid, 'requestVar')
-    rVars = [get_uid(uid) for uid in rVarsUid if get_uid(uid).priority <= pmax]
+    r_vars_uid = get_request_by_id_by_sect(cv.uid, 'requestVar')
+    r_vars = [get_uid(uid) for uid in r_vars_uid if get_uid(uid).priority <= pmax]
     if printout:
-        print("les requestVars:", [rVar.title for rVar in rVars])
-    VarGroups = [get_uid(rv.vgid) for rv in rVars]
+        print("les requestVars:", [rVar.title for rVar in r_vars])
+    var_groups = [get_uid(rv.vgid) for rv in r_vars]
     if printout:
-        print("les requestVars groups:", [rVg.label for rVg in VarGroups])
-    RequestLinksId = []
-    for vg in VarGroups:
-        RequestLinksId.extend(get_request_by_id_by_sect(vg.uid, 'requestLink'))
-    FilteredRequestLinks = []
-    for rlid in RequestLinksId:
+        print("les requestVars groups:", [rVg.label for rVg in var_groups])
+    request_links_id = list()
+    for vg in var_groups:
+        request_links_id.extend(get_request_by_id_by_sect(vg.uid, 'requestLink'))
+    filtered_request_links = list()
+    for rlid in request_links_id:
         rl = get_uid(rlid)
         if rl in global_rls:
-            FilteredRequestLinks.append(rl)
+            filtered_request_links.append(rl)
     if printout:
-        print("les requestlinks:", [get_uid(rlid).label for rlid in RequestLinksId])
+        print("les requestlinks:", [get_uid(rlid).label for rlid in request_links_id])
     if printout:
-        print("les FilteredRequestlinks:", [rl.label for rl in FilteredRequestLinks])
-    RequestItems = []
-    for rl in FilteredRequestLinks:
-        RequestItems.extend(get_request_by_id_by_sect(rl.uid, 'requestItem'))
+        print("les FilteredRequestlinks:", [rl.label for rl in filtered_request_links])
+    request_items = list()
+    for rl in filtered_request_links:
+        request_items.extend(get_request_by_id_by_sect(rl.uid, 'requestItem'))
     if printout:
-        print("les requestItems:", [get_uid(riid).label for riid in RequestItems])
+        print("les requestItems:", [get_uid(riid).label for riid in request_items])
 
     # 2- Select those request links which include expt and year
     larger = None
-    for riid in RequestItems:
+    for riid in request_items:
         ri = get_uid(riid)
-        applies, endyear = RequestItem_applies_for_exp_and_year(ri, expt, year, debug=printout)
+        applies, endyear = request_item_applies_for_exp_and_year(ri, expt, year, debug=printout)
         if printout:
             print("For var and freq selected for debug and year %s, for ri %s, applies=%s, endyear=%s" %
                   (str(year), ri.title, str(applies), str(endyear)))
@@ -127,7 +127,7 @@ def endyear_for_CMORvar(cv, expt, year, printout=False):
     return larger
 
 
-def RequestItem_applies_for_exp_and_year(ri, experiment, year=None, debug=False):
+def request_item_applies_for_exp_and_year(ri, experiment, year=None, debug=False):
     """
     Returns True if requestItem 'ri' in data request is relevant
     for a given 'experiment' and 'year'. Toggle 'debug' allow some printouts
@@ -297,14 +297,14 @@ def year_in_ri_tslice(ri, exp, year, debug=False):
     if tslice.type == "relativeRange":  # e.g. _slice_abrupt30
         first_year = experiment_start_year(exp)
         # first_year = sset["branch_year_in_child"]
-        relevant = (year >= tslice.start + first_year - 1 and year <= tslice.end + first_year - 1)
+        relevant = tslice.start + first_year - 1 <= year <= tslice.end + first_year - 1
         endyear = first_year + tslice.end - 1
     elif tslice.type == "simpleRange":  # e.g. _slice_DAMIP20
-        relevant = (year >= tslice.start and year <= tslice.end)
+        relevant = tslice.start <= year <= tslice.end
         endyear = tslice.end
     elif tslice.type == "sliceList":  # e.g. _slice_DAMIP40
         for start in range(tslice.start, int(tslice.end - tslice.sliceLen + 2), int(tslice.step)):
-            if year >= start and year < start + tslice.sliceLen:
+            if start <= year <= start + tslice.sliceLen:
                 relevant = True
                 endyear = start + tslice.sliceLen - 1
     elif tslice.type == "dayList":  # e.g. _slice_RFMIP2
@@ -316,10 +316,10 @@ def year_in_ri_tslice(ri, exp, year, debug=False):
     elif tslice.type == "startRange":  # e.g. _slice_VolMIP3
         # used only for VolMIP : _slice_VolMIP3
         start_year = experiment_start_year(exp)
-        relevant = (year >= start_year and year < start_year + nyear)
+        relevent = start_year <= year <= start_year + nyear
         endyear = start_year + nyear - 1
     elif tslice.type == "monthlyClimatology":  # e.g. _slice_clim20
-        relevant = (year >= tslice.start and year <= tslice.end)
+        relevant = tslice.start <= year <= tslice.end
         endyear = tslice.end
     elif tslice.type == "branchedYears":  # e.g. _slice_piControl020
         source, source_type = get_source_id_and_type()
@@ -339,9 +339,9 @@ def year_in_ri_tslice(ri, exp, year, debug=False):
                         print("slice OK : year=%d, start=%d tslice.start=%d refyear=%d tslice.nyears=%d lastyear=%d" %
                               (year, start, tslice.start, refyear, tslice.nyears, lastyear))
         else:
-            raise dr2xml_error("For tslice %s, child %s start year is not documented" % (tslice.title, tslice.child))
+            raise Dr2xmlError("For tslice %s, child %s start year is not documented" % (tslice.title, tslice.child))
     else:
-        raise dr2xml_error("type %s for time slice %s is not handled" % (tslice.type, tslice.title))
+        raise Dr2xmlError("type %s for time slice %s is not handled" % (tslice.type, tslice.title))
     if debug:
         print("for year %d and experiment %s, relevant is %s for tslice %s of type %s, endyear=%s" %
               (year, exp.label, repr(relevant), ri.title, tslice.type, repr(endyear)))
@@ -378,7 +378,7 @@ def experiment_start_year(exp, debug=False):
             form = "Cannot guess first year for experiment %s : DR says :'%s' "
             if is_sset_not_None():
                 form += "and 'branch_year_in_child' is not provided in experiment's settings"
-            raise dr2xml_error(form % (exp.label, exp.starty))
+            raise Dr2xmlError(form % (exp.label, exp.starty))
 
 
 def experiment_end_year(exp):
@@ -405,7 +405,7 @@ def experiment_end_year_from_sset(exp):
         return experiment_end_year(exp)
 
 
-def select_CMORvars_for_lab(sset=False, year=None, printout=False):
+def select_cmor_vars_for_lab(sset=False, year=None, printout=False):
     """
     A function to list CMOR variables relevant for a lab (and also,
     optionnally for an experiment and a year)
@@ -429,11 +429,11 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     # From MIPS set to Request links
     global sc, global_rls, grid_choice, rls_for_all_experiments, sn_issues
     if sset:
-        tierMax = get_variable_from_sset_else_lset_without_default('tierMax')
+        tier_max = get_variable_from_sset_else_lset_without_default('tierMax')
     else:
-        tierMax = get_variable_from_lset_without_default('tierMax')
+        tier_max = get_variable_from_lset_without_default('tierMax')
     if sc is None:
-        sc = initialize_sc(tierMax)
+        sc = initialize_sc(tier_max)
 
     # Set sizes for lab settings, if available (or use CNRM-CM6-1 defaults)
     mcfg = namedtuple('mcfg', ['nho', 'nlo', 'nha', 'nla', 'nlas', 'nls', 'nh1'])
@@ -454,7 +454,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     mips_list.sort()
     #
     if rls_for_all_experiments is None:
-        rls_for_mips = sc.getRequestLinkByMip(set(mips_list)) # Because scope do not accept list types
+        rls_for_mips = sc.getRequestLinkByMip(set(mips_list))  # Because scope do not accept list types
         if printout:
             print("Number of Request Links which apply to MIPS", print_struct(mips_list), " is: ", len(rls_for_mips))
         #
@@ -498,7 +498,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
                 # debug=(ri.label=='C4mipC4mipLandt2')
                 if debug:
                     print("Checking requestItem ", ri.title,)
-                applies, endyear = RequestItem_applies_for_exp_and_year(ri, experiment_id, year, debug)
+                applies, endyear = request_item_applies_for_exp_and_year(ri, experiment_id, year, debug)
                 if applies:
                     if debug:
                         print(" applies ")
@@ -626,7 +626,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     simplified_vars = []
     allow_pseudo = get_variable_from_lset_with_default('allow_pseudo_standard_names', False)
     for v in d:
-        svar = simple_CMORvar()
+        svar = SimpleCMORVar()
         cmvar = get_uid(v)
         sn_issues = complement_svar_using_cmorvar(svar, cmvar, sn_issues, [], allow_pseudo)
         svar.Priority = analyze_priority(cmvar, mips_list)
@@ -645,7 +645,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     return simplified_vars
 
 
-def gather_AllSimpleVars(year=False, printout=False, select="on_expt_and_year"):
+def gather_all_simple_vars(year=False, printout=False, select="on_expt_and_year"):
     """
     List of mip variables asked
     :param year: year when the variables are created
@@ -654,18 +654,18 @@ def gather_AllSimpleVars(year=False, printout=False, select="on_expt_and_year"):
     :return: list of mip variables
     """
     if select == "on_expt_and_year" or select == "":
-        mip_vars_list = select_CMORvars_for_lab(True, year, printout=printout)
+        mip_vars_list = select_cmor_vars_for_lab(True, year, printout=printout)
     elif select == "on_expt":
-        mip_vars_list = select_CMORvars_for_lab(True, None, printout=printout)
+        mip_vars_list = select_cmor_vars_for_lab(True, None, printout=printout)
     elif select == "no":
-        mip_vars_list = select_CMORvars_for_lab(False, None, printout=printout)
+        mip_vars_list = select_cmor_vars_for_lab(False, None, printout=printout)
     else:
-        raise dr2xml_error("Choice %s is not allowed for arg 'select'" % select)
+        raise Dr2xmlError("Choice %s is not allowed for arg 'select'" % select)
     #
     if get_variable_from_sset_else_lset_with_default('listof_home_vars', 'listof_home_vars', None):
         exp = get_variable_from_sset_with_default_in_sset('experiment_for_requests', 'experiment_id')
-        process_homeVars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
-                         expid=exp, printout=printout)
+        process_home_vars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
+                          expid=exp, printout=printout)
     else:
         print("Info: No HOMEvars list provided.")
     return mip_vars_list
@@ -679,7 +679,7 @@ def select_variables_to_be_processed(year, context, select, printout, debug):
     # --------------------------------------------------------------------
     # Extract CMOR variables for the experiment and year and lab settings
     # --------------------------------------------------------------------
-    mip_vars_list = gather_AllSimpleVars(year, printout, select)
+    mip_vars_list = gather_all_simple_vars(year, printout, select)
     # Group CMOR vars per realm
     svars_per_realm = OrderedDict()
     for svar in mip_vars_list:

@@ -14,7 +14,7 @@
 
 .. autofunction:: analyzer.analyze_cell_time_method
 
-.. autofunction:: analyzer.Cmip6Freq2XiosFreq
+.. autofunction:: analyzer.cmip6_freq_to_xios_freq
 
 .. autofunction:: analyzer.guess_freq_from_table_name
 
@@ -22,4 +22,4 @@
 
 .. autofunction:: analyzer.cellmethod2area
 
-.. autofunction:: analyzer.DRgrid2gridatts
+.. autofunction:: analyzer.DR_grid_to_grid_atts

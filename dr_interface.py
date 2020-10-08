@@ -55,18 +55,18 @@ def get_collection(collection):
     return dq.coll[collection]
 
 
-def get_CMORvarId_by_label(label):
+def get_cmor_var_id_by_label(label):
     """
     Get the id of the CMOR var corresponding to label.
     """
     return dq.inx.CMORvar.label[label]
 
 
-def initialize_sc(tierMax):
+def initialize_sc(tier_max):
     """
     Initialize module sc variable
     """
-    return dreqQuery(dq=dq, tierMax=tierMax)
+    return dreqQuery(dq=dq, tierMax=tier_max)
 
 
 def get_DR_version():

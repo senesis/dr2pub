@@ -86,7 +86,7 @@ from Xparse import init_context
 from Xwrite import write_xios_file_def
 
 # Info printing tools
-from infos import print_SomeStats
+from infos import print_some_stats
 
 
 print("\n", 50 * "*", "\n*")
@@ -385,11 +385,12 @@ example_lab_and_model_settings = {
     # to some grid (i.e. Xios domain) in external files. The varname in file
     # must match the referenced id in pingfile. Tested only for fixed fields
     'fx_from_file': {
-        "areacella": {"complete":
-                          {"LR": "areacella_LR",
-                           "HR": "areacella_HR", }
-                      }
-
+        "areacella": {
+            "complete": {
+                "LR": "areacella_LR",
+                "HR": "areacella_HR",
+            }
+        }
     },
 
     # The path of the directory which, at run time, contains the root XML file (iodef.xml)
@@ -633,7 +634,8 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     :param six.string_types enddate: enddate of the simulation
     :param six.string_types context: XIOS context considered for the launch
     :param six.string_types cvs_path: path to controlled vocabulary to be used
-    :param six.string_types pingfiles: files which are analysed to find variables with a different name between model and Data Request
+    :param six.string_types pingfiles: files which are analysed to find variables with a different name between model
+                                       and Data Request
     :param six.string_types dummies: specify how to treat dummy variables among:
 
         - "include": include dummy refs in file_def (useful for demonstration run)
@@ -726,8 +728,8 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     # mpmoine_petitplus:generate_file_defs: pour sortir des stats sur ce que l'on sort reelement
     # SS - non : gros plus
     if printout:
-        print_SomeStats(context, svars_per_table, skipped_vars_per_table,
-                        actually_written_vars, get_variable_from_lset_with_default("print_stats_per_var_label", False))
+        print_some_stats(context, svars_per_table, skipped_vars_per_table,
+                         actually_written_vars, get_variable_from_lset_with_default("print_stats_per_var_label", False))
 
     warn = OrderedDict()
     for warning, label, table in get_config_variable("cell_method_warnings"):
@@ -745,14 +747,14 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
         print()
 
 
-def RequestItemInclude(ri, var_label, freq):
+def request_item_include(ri, var_label, freq):
     """
     test if a variable is requested by a requestItem at a given freq
     """
-    varGroup = get_uid(get_uid(ri.rlid).refid)
-    reqVars = get_request_by_id_by_sect(varGroup.uid, 'requestVar')
-    cmVars = [get_uid(get_uid(reqvar).vid) for reqvar in reqVars]
-    return any([cmv.label == var_label and cmv.frequency == freq for cmv in cmVars])
+    var_group = get_uid(get_uid(ri.rlid).refid)
+    req_vars = get_request_by_id_by_sect(var_group.uid, 'requestVar')
+    cm_vars = [get_uid(get_uid(reqvar).vid) for reqvar in req_vars]
+    return any([cmv.label == var_label and cmv.frequency == freq for cmv in cm_vars])
 
 
 def realm_is_processed(realm, source_type):

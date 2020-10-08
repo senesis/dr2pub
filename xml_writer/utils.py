@@ -79,7 +79,8 @@ def _find_text(xml_string, fatal_sep=False, verbose=False, fatal=True):
     :param bool fatal_sep: should an error be raised if separators do not begin ``xml_string``?
     :param bool verbose: should verbose mode be active?
     :param bool fatal: should an error be raised in case of anomaly?
-    :return: A couple (``xml_string``, ``xml_text``) where ``xml_string`` is the xml_string from which the text has been removed and ``xml_text`` is the text removed
+    :return: A couple (``xml_string``, ``xml_text``) where ``xml_string`` is the xml_string from which the text has been
+             removed and ``xml_text`` is the text removed
     """
     xml_string = xml_string.strip()
     print_if_needed("<<<find_text: XML_STRING before>>>", len(xml_string), xml_string, verbose=verbose)
@@ -135,5 +136,5 @@ def iterate_on_string(xml_string, separator="\n", verbose=False):
     pos_init = 0
     for substring in new_xml_string:
         substring += separator
-        yield (substring, pos_init)
+        yield substring, pos_init
         pos_init += len(substring)

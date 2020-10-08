@@ -15,7 +15,7 @@ import os
 import sys
 
 # Utilities
-from utils import dr2xml_error
+from utils import Dr2xmlError
 
 # Global variables and configuration tools
 from config import get_config_variable
@@ -58,7 +58,7 @@ def read_pingfiles_variables(pingfiles, dummies):
                             if v not in pingvars:
                                 print(v,)
                         print()
-                        raise dr2xml_error("They are still dummies in %s , while option is 'forbid' :" % pingfile)
+                        raise Dr2xmlError("They are still dummies in %s , while option is 'forbid' :" % pingfile)
                     else:
                         pingvars = list(ping_refs)
                 elif dummies == "skip":
@@ -132,9 +132,9 @@ def get_xml_childs(elt, tag='field', groups=['context', 'field_group',
         return []
 
 
-def pingFileForRealmsList(settings, context, lrealms, svars, path_special, dummy="field_atm",
-                          dummy_with_shape=False, exact=False,
-                          comments=False, prefix="CV_", filename=None, debug=[]):
+def ping_file_for_realms_list(settings, context, lrealms, svars, path_special, dummy="field_atm",
+                              dummy_with_shape=False, exact=False,
+                              comments=False, prefix="CV_", filename=None, debug=[]):
     """Based on a list of realms LREALMS and a list of simplified vars
     SVARS, create the ping file which name is ~
     ping_<realms_list>.xml, which defines fields for all vars in

@@ -61,7 +61,7 @@ def iterate_on_characters_to_check(xml_string, verbose=False):
     # Build the iterator
     tmp_characters_to_check = sorted(tmp_characters_to_check, key=lambda t: t[0])
     for (pos, char_type) in tmp_characters_to_check:
-        yield (pos, char_type)
+        yield pos, char_type
 
 
 def _pre_xml_string_format(xml_string, verbose=False):
@@ -123,7 +123,8 @@ def _pre_xml_string_format(xml_string, verbose=False):
                     print_if_needed("<<<pre_xml_string_format: unexpected close comment>>>", pos, verbose=verbose)
                     raise Exception("Unexpected end of comment at pos %d" % pos)
             elif character_type == "double_quote":
-                if is_comment_open or is_header_open or is_single_quote_open or (not is_beacon_open and nb_beacons_nested > 0):
+                if is_comment_open or is_header_open or is_single_quote_open or \
+                        (not is_beacon_open and nb_beacons_nested > 0):
                     print_if_needed("<<<pre_xml_string_format: double quote>>>", pos, verbose=verbose)
                 elif is_double_quote_open:
                     print_if_needed("<<<pre_xml_string_format: close double quote>>>", pos, verbose=verbose)
@@ -132,7 +133,8 @@ def _pre_xml_string_format(xml_string, verbose=False):
                     print_if_needed("<<<pre_xml_string_format: open double quote>>>", pos, verbose=verbose)
                     is_double_quote_open = True
             elif character_type == "single_quote":
-                if is_comment_open or is_header_open or is_double_quote_open or (not is_beacon_open and nb_beacons_nested > 0):
+                if is_comment_open or is_header_open or is_double_quote_open or \
+                        (not is_beacon_open and nb_beacons_nested > 0):
                     print_if_needed("<<<pre_xml_string_format: single quote>>>", pos, verbose=verbose)
                 elif is_single_quote_open:
                     to_replace[pos] = ("'", '"')

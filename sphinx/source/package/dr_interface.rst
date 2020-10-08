@@ -17,7 +17,7 @@
 
 .. autofunction:: dr_interface.get_collection
 
-.. autofunction:: dr_interface.get_CMORvarId_by_label
+.. autofunction:: dr_interface.get_cmor_var_id_by_label
 
 .. autofunction:: dr_interface.initialize_sc
 

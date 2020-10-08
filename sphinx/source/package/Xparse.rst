@@ -31,6 +31,6 @@
 
 .. autofunction:: Xparse.id2grid
 
-.. autofunction:: Xparse.idHasExprWithAt
+.. autofunction:: Xparse.id_has_expr_with_at
 
 .. autoclass:: Xparse.Xparse_error

@@ -14,11 +14,11 @@
 .. autoclass:: vars_cmor.simple_Dim
 
 
-.. autofunction:: vars_cmor.get_CMORvar
+.. autofunction:: vars_cmor.get_cmor_var
 
-.. autofunction:: vars_cmor.get_SpatialAndTemporal_Shapes
+.. autofunction:: vars_cmor.get_spatial_and_temporal_shapes
 
-.. autofunction:: vars_cmor.analyze_ambiguous_MIPvarnames
+.. autofunction:: vars_cmor.analyze_ambiguous_mip_varnames
 
 .. autofunction:: vars_cmor.ping_alias
 

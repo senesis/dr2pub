@@ -7,11 +7,10 @@ Postprocessing functions
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import re
 from collections import OrderedDict
 
 # Utilities
-from utils import dr2xml_error
+from utils import Dr2xmlError
 
 # Global variables and configuration tools
 from config import get_config_variable
@@ -22,10 +21,10 @@ from settings_interface import get_variable_from_lset_without_default, get_varia
 from xml_interface import create_string_from_xml_element, create_xml_element, create_xml_sub_element
 
 # Settings tools
-from analyzer import Cmip6Freq2XiosFreq
+from analyzer import cmip6_freq_to_xios_freq
 
 # Grids tools
-from grids import isVertDim, create_axis_def, create_grid_def, change_domain_in_grid
+from grids import is_vert_dim, create_axis_def, create_grid_def, change_domain_in_grid
 
 # XIOS reading and writing tools
 from Xparse import id2grid
@@ -45,23 +44,23 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     vertical axis a zoom of the union axis)
     """
     #
-    vdims = [sd for sd in sv.sdims.values() if isVertDim(sd)]
+    vdims = [sd for sd in sv.sdims.values() if is_vert_dim(sd)]
     if len(vdims) == 1:
         sd = vdims[0]
     elif len(vdims) > 1:
-        raise dr2xml_error("Too many vertical dims for %s (%s)" % (sv.label, repr(vdims)))
+        raise Dr2xmlError("Too many vertical dims for %s (%s)" % (sv.label, repr(vdims)))
     if len(vdims) == 0:
         # Analyze if there is a singleton vertical dimension for the variable
         # sd=scalar_vertical_dimension(sv)
         # if sd is not None :
         #    print "Single level %s for %s"%(sv,sv.label),vdims
         # else:
-        raise dr2xml_error(
+        raise Dr2xmlError(
             "Not enough vertical dims for %s (%s)" % (sv.label, [(s.label, s.out_name) for s in sv.sdims.values()]))
     #
     #
     # sd=vdims[0]
-    alias_with_levels = "_".join([alias, sd.label]) # e.g. 'CMIP6_hus7h_plev7h'
+    alias_with_levels = "_".join([alias, sd.label])  # e.g. 'CMIP6_hus7h_plev7h'
     if alias_with_levels in pingvars:
         print("No vertical interpolation for %s because the pingfile provides it" % alias_with_levels)
         return src_grid_id, alias_with_levels
@@ -71,7 +70,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     lwps = sv.label_without_psuffix
     alias_in_ping = prefix + lwps  # e.g. 'CMIP6_hus' and not 'CMIP6_hus7h'; 'CMIP6_co2' and not 'CMIP6_co2Clim'
     if alias_in_ping not in pingvars:  # e.g. alias_in_ping='CMIP6_hus'
-        raise dr2xml_error("Field id " + alias_in_ping + " expected in pingfile but not found.")
+        raise Dr2xmlError("Field id " + alias_in_ping + " expected in pingfile but not found.")
     #
     # Create field alias_for_sampling for enforcing the operation before time sampling
     operation = get_variable_from_lset_with_default("vertical_interpolation_operation", "instant")
@@ -92,7 +91,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
 
     # Create field 'alias_sample' which time-samples the field at required freq
     # before vertical interpolation
-    alias_sample = "_".join([alias_in_ping, "sampled", vert_freq]) # e.g.  CMIP6_zg_sampled_3h
+    alias_sample = "_".join([alias_in_ping, "sampled", vert_freq])  # e.g.  CMIP6_zg_sampled_3h
     # <field id="CMIP6_hus_sampled_3h" field_ref="CMIP6_hus_instant" freq_op="3h" expr="@CMIP6_hus_instant"/>
     sampled_field_dict = OrderedDict()
     sampled_field_dict["id"] = alias_sample
@@ -172,7 +171,7 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
     printout = False
 
     # e.g. <field id="CMIP6_ua_plev39_average" field_ref="CMIP6_ua_plev39" operation="average" />
-    xios_freq = Cmip6Freq2XiosFreq(frequency, None)
+    xios_freq = cmip6_freq_to_xios_freq(frequency, None)
     field1_id = "_".join([field_id, operation])  # e.g. CMIP6_hus_plev7h_instant
     field_1_dict = OrderedDict()
     field_1_dict["id"] = field1_id
@@ -216,7 +215,7 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
         grid_id3 = grid_id
 
     if not zgrid_id:
-        raise dr2xml_error("Must provide zgrid_id in lab_settings, the id of a latitude axis which has (initialized) "
+        raise Dr2xmlError("Must provide zgrid_id in lab_settings, the id of a latitude axis which has (initialized) "
                            "latitude values equals to those of the rectangular grid used")
 
     # And then regrid to final grid
@@ -304,7 +303,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     axis_24h_dict["name"] = "time3"
     axis_24h_dict["unit"] = "days since ?"
     axis_24h_dict["standard_name"] = "time"
-    axis_24h_dict["value"] = "(0,23)[{}]".format(" ".join([str(i + 0.5) for i in range(0,24)]))
+    axis_24h_dict["value"] = "(0,23)[{}]".format(" ".join([str(i + 0.5) for i in range(0, 24)]))
     axis_24h = create_xml_element(tag="axis", attrib=axis_24h_dict)
     create_xml_sub_element(xml_element=axis_24h, tag="temporal_splitting")
     axis_defs[axis_24h_id] = axis_24h

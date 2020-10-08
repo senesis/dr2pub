@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from collections import OrderedDict
 
 # Utilities
-from utils import dr2xml_error
+from utils import Dr2xmlError
 
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_lset_without_default
@@ -21,7 +21,7 @@ from dr_interface import get_collection, get_uid, get_request_by_id_by_sect, pri
 from analyzer import cellmethod2area
 
 
-def get_CMORvar(label, table):
+def get_cmor_var(label, table):
     """
     Returns CMOR variable for a given label in a given table
     (could be optimized using inverse index)
@@ -35,7 +35,7 @@ def get_CMORvar(label, table):
     return thevar
 
 
-def get_SpatialAndTemporal_Shapes(cmvar):
+def get_spatial_and_temporal_shapes(cmvar):
     """
     Get the spatial et temporal shape of a CMOR variable from the DR.
     """
@@ -57,7 +57,7 @@ def get_SpatialAndTemporal_Shapes(cmvar):
     return [spatial_shape, temporal_shape]
 
 
-def analyze_ambiguous_MIPvarnames(debug=[]):
+def analyze_ambiguous_mip_varnames(debug=[]):
     """
     Return the list of MIP varnames whose list of CMORvars for a single realm
     show distinct values for the area part of the cell_methods
@@ -148,7 +148,7 @@ def ping_alias(svar, pingvars, error_on_fail=False):
         # print "+++ alias_ping = ", pref, svar.label_without_psuffix, alias_ping
     if alias_ping not in pingvars:
         if error_on_fail:
-            raise dr2xml_error("Cannot find an alias in ping for variable %s" % svar.label)
+            raise Dr2xmlError("Cannot find an alias in ping for variable %s" % svar.label)
         else:
             return None
     return alias_ping
@@ -169,7 +169,7 @@ def analyze_priority(cmvar, lmips):
     return prio
 
 
-class simple_CMORvar(object):
+class SimpleCMORVar(object):
     """
     A class for unifying CMOR vars and home variables
     """
@@ -204,7 +204,7 @@ class simple_CMORvar(object):
         self.cmvar = None  # corresponding CMORvar, if any
 
 
-class simple_Dim(object):
+class SimpleDim(object):
     """
     A class for unifying grid info coming from DR and extra_Tables
     """

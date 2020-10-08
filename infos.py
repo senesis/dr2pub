@@ -9,9 +9,18 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from collections import OrderedDict
 
 
-# mpmoine_petitplus: nouvelle fonction print_SomeStats (plus d'info sur les skipped_vars, nbre de vars / (shape,freq) )
+# mpmoine_petitplus: nouvelle fonction print_some_stats (plus d'info sur les skipped_vars, nbre de vars / (shape,freq) )
 # SS - non : gros plus
-def print_SomeStats(context, svars_per_table, skipped_vars_per_table, actually_written_vars, extended=False):
+def print_some_stats(context, svars_per_table, skipped_vars_per_table, actually_written_vars, extended=False):
+    """
+
+    :param context:
+    :param svars_per_table:
+    :param skipped_vars_per_table:
+    :param actually_written_vars:
+    :param extended:
+    :return:
+    """
     if False:
         # --------------------------------------------------------------------
         # Print Summary: list of  considered variables per table
@@ -84,9 +93,10 @@ def print_SomeStats(context, svars_per_table, skipped_vars_per_table, actually_w
                 tot_for_freq_and_shape_among_tables = 0
                 for table in dic[frequency][spatial_shp]:
                     for Priority in dic[frequency][spatial_shp][table]:
-                        l = dic[frequency][spatial_shp][table][Priority]
-                        tot_for_freq_and_shape_among_tables += len(l)
-                        print("%10s" % " ", " %8s" % " ", "% 12s" % table, "P%1d" % Priority, "% 3d : " % len(l), *l)
+                        list_priority = dic[frequency][spatial_shp][table][Priority]
+                        tot_for_freq_and_shape_among_tables += len(list_priority)
+                        print("%10s" % " ", " %8s" % " ", "% 12s" % table, "P%1d" % Priority, "% 3d : " %
+                              len(list_priority), *list_priority)
                 print("%10s" % frequency, " %8s" % spatial_shp, "% 11s" % "--------", "---", "%3d" %
                       tot_for_freq_and_shape_among_tables)
                 tot_for_freq_among_shapes += tot_for_freq_and_shape_among_tables

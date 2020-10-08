@@ -11,7 +11,7 @@ from collections import OrderedDict
 from io import open
 
 # Utilities
-from utils import dr2xml_grid_error
+from utils import Dr2xmlGridError
 
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_lset_with_default, get_variable_from_lset_without_default,\
@@ -103,8 +103,7 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
     global splitfreqs
     if splitfreqs is None:
         read_splitfreqs()
-    if splitfreqs and svar.label in splitfreqs and \
-            svar.mipTable in splitfreqs[svar.label]:
+    if splitfreqs and svar.label in splitfreqs and svar.mipTable in splitfreqs[svar.label]:
         return splitfreqs[svar.label][svar.mipTable]
     #
     max_size = get_variable_from_lset_with_default("max_file_size_in_floats", 500 * 1.e6)
@@ -116,10 +115,9 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
     if compression_factor and svar.label in compression_factor and \
             svar.mipTable in compression_factor[svar.label]:
         if printout:
-            print("Dividing size of %s by %g : %g -> %g" % (svar.label,
-                                                            compression_factor[svar.label][svar.mipTable],
-                                                            size,
-                                                            (size + 0.) // compression_factor[svar.label][svar.mipTable]))
+            print("Dividing size of %s by %g : %g -> %g"
+                  % (svar.label, compression_factor[svar.label][svar.mipTable], size,
+                     (size + 0.) // compression_factor[svar.label][svar.mipTable]))
         size = (size + 0.) // compression_factor[svar.label][svar.mipTable]
     # else:
     #    # Some COSP outputs are highly compressed
@@ -172,14 +170,21 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
                 if nbdays > 1.:
                     return "1d"
                 else:
-                    raise (dr2xml_grid_error("No way to put even a single day of data in %g for frequency %s, var %s,"
-                                              " table %s" % (max_size, freq, svar.label, svar.mipTable)))
+                    raise (Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
+                                             " table %s" % (max_size, freq, svar.label, svar.mipTable)))
     else:
-        raise dr2xml_grid_error(
+        raise Dr2xmlGridError(
             "Warning: field_size returns 0 for var %s, cannot compute split frequency." % svar.label)
 
 
 def timesteps_per_freq_and_duration(freq, nbdays, sampling_tstep):
+    """
+
+    :param freq:
+    :param nbdays:
+    :param sampling_tstep:
+    :return:
+    """
     # This function returns the number of records within nbdays
     duration = 0.
     # Translate freq strings to duration in days
@@ -219,10 +224,16 @@ def timesteps_per_freq_and_duration(freq, nbdays, sampling_tstep):
     elif freq == "1hrCM":
         return (int(float(nbdays) / 31) + 1) * 24.
     else:
-        raise (dr2xml_grid_error("Frequency %s is not handled" % freq))
+        raise (Dr2xmlGridError("Frequency %s is not handled" % freq))
 
 
 def field_size(svar, mcfg):
+    """
+
+    :param svar:
+    :param mcfg:
+    :return:
+    """
     # COmputing field size is basee on the fact that sptial dimensions
     # are deduced from spatial shape and values in mcfg, while
     # attribute other_dims_size of the variable indicates he prodcut
@@ -325,6 +336,6 @@ def field_size(svar, mcfg):
         siz = 1
 
     if siz == 0:
-        raise dr2xml_grid_error("Cannot compute field_size for var %s and shape %s" % (svar.label, s))
+        raise Dr2xmlGridError("Cannot compute field_size for var %s and shape %s" % (svar.label, s))
 
     return siz

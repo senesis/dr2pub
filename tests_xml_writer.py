@@ -24,8 +24,15 @@ from xml_writer import Comment, Header, Element
 
 
 class TestNonSpecificMethods(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
+        """
+
+        :return:
+        """
         self.my_beacon = Beacon()
         self.my_comment = Comment("A new comment !")
         self.my_header = Header("A header", OrderedDict(an_attrib="a_value", an_other_attrib=6))
@@ -34,6 +41,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.my_element.append(self.my_comment)
 
     def test_is_xml_element(self):
+        """
+
+        :return:
+        """
         # Test is_xml_element
         self.assertTrue(is_xml_element(self.my_beacon))
         self.assertTrue(is_xml_element(self.my_comment))
@@ -42,6 +53,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.assertFalse(is_xml_element("an_element"))
 
     def test_update_level(self):
+        """
+
+        :return:
+        """
         # Test update_level
         self.assertEqual(self.my_beacon.level, 0)
         self.my_beacon.update_level(0)
@@ -50,6 +65,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.assertEqual(self.my_comment.level, 2)
 
     def test_correct_attrib(self):
+        """
+
+        :return:
+        """
         # Test correct_attrib
         attrib = None
         with self.assertRaises(TypeError):
@@ -63,6 +82,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.assertDictEqual(self.my_beacon.correct_attrib(attrib), OrderedDict(a_key="a_value", an_other_key="0"))
 
     def test_dict_equality(self):
+        """
+
+        :return:
+        """
         a = dict(a_key="a_value", an_other_key="an_other_value")
         b = OrderedDict(a_key="a_value", an_other_key="an_other_different_value")
         self.assertFalse(self.my_beacon._test_dict_equality(a, b))
@@ -73,6 +96,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.assertFalse(self.my_beacon._test_dict_equality(a, "a_string"))
 
     def test_attrib_equality(self):
+        """
+
+        :return:
+        """
         an_other_beacon = Beacon()
         an_other_beacon.update_level(5)
         an_other_beacon.an_attrib = "my_attrib"
@@ -82,6 +109,10 @@ class TestNonSpecificMethods(unittest.TestCase):
         self.assertTrue(an_other_beacon._test_attribute_equality("level", self.my_beacon))
 
     def test_dump_dict(self):
+        """
+
+        :return:
+        """
         # Test _dump_dict
         attrib = OrderedDict()
         self.assertIsNone(self.my_beacon.dump_dict(attrib))
@@ -92,15 +123,30 @@ class TestNonSpecificMethods(unittest.TestCase):
 
 
 class TestsBeacon(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
+        """
+
+        :return:
+        """
         self.my_beacon = Beacon()
 
     def test_create_beacon(self):
+        """
+
+        :return:
+        """
         a = Beacon()
         self.assertEqual(a.level, 0)
 
     def test_equality(self):
+        """
+
+        :return:
+        """
         # Test __eq__
         a_beacon = Beacon()
         self.assertTrue(self.my_beacon == a_beacon)
@@ -109,6 +155,10 @@ class TestsBeacon(unittest.TestCase):
         self.my_beacon.update_level(0)
 
     def test_representation(self):
+        """
+
+        :return:
+        """
         # Test __str__ and __repr__
         with self.assertRaises(NotImplementedError):
             str(self.my_beacon)
@@ -116,16 +166,28 @@ class TestsBeacon(unittest.TestCase):
             repr(self.my_beacon)
 
     def test_length(self):
+        """
+
+        :return:
+        """
         # Test __len__
         with self.assertRaises(NotImplementedError):
             len(self.my_beacon)
 
     def test_dump(self):
+        """
+
+        :return:
+        """
         # Test dump
         with self.assertRaises(NotImplementedError):
             self.my_beacon.dump()
 
     def test_copy(self):
+        """
+
+        :return:
+        """
         # Test __copy__
         an_other_beacon = copy(self.my_beacon)
         self.assertTrue(isinstance(an_other_beacon, Beacon))
@@ -135,6 +197,10 @@ class TestsBeacon(unittest.TestCase):
         self.assertEqual(a_third_beacon.level, self.my_beacon.level)
 
     def test_dump_attrib(self):
+        """
+
+        :return:
+        """
         # Test _dump_attrib
         with self.assertRaises(NotImplementedError):
             self.my_beacon._dump_attrib()
@@ -143,11 +209,22 @@ class TestsBeacon(unittest.TestCase):
 
 
 class TestsComments(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
+        """
+
+        :return:
+        """
         self.my_comment = Comment("a very long comment")
 
     def test_create_comment(self):
+        """
+
+        :return:
+        """
         a = Comment("a comment !")
         self.assertEqual(a.level, 0)
         self.assertEqual(a.comment, "a comment !")
@@ -155,6 +232,10 @@ class TestsComments(unittest.TestCase):
             Comment()
 
     def test_equality(self):
+        """
+
+        :return:
+        """
         # Test __eq__
         a_comment = Comment("some comment")
         a_comment.update_level(6)
@@ -165,19 +246,35 @@ class TestsComments(unittest.TestCase):
         self.assertTrue(a_comment == an_other_comment)
 
     def test_representation(self):
+        """
+
+        :return:
+        """
         # Test __str__ and __repr__
         self.assertEqual(str(self.my_comment), "<!--a very long comment-->")
         self.assertEqual(repr(self.my_comment), "<!--a very long comment-->")
 
     def test_length(self):
+        """
+
+        :return:
+        """
         # Test __len__
         self.assertEqual(len(self.my_comment), 26)
 
     def test_dump(self):
+        """
+
+        :return:
+        """
         # Test dump
         self.assertEqual(self.my_comment.dump(), "<!--a very long comment-->")
 
     def test_copy(self):
+        """
+
+        :return:
+        """
         # Test __copy__
         an_other_comment = copy(self.my_comment)
         self.assertTrue(isinstance(an_other_comment, Comment))
@@ -185,6 +282,10 @@ class TestsComments(unittest.TestCase):
         self.assertEqual(an_other_comment.comment, self.my_comment.comment)
 
     def test_dump_attrib(self):
+        """
+
+        :return:
+        """
         # Test _dump_attrib
         with self.assertRaises(NotImplementedError):
             self.my_comment._dump_attrib()
@@ -193,14 +294,25 @@ class TestsComments(unittest.TestCase):
 
 
 class TestsHeader(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
+        """
+
+        :return:
+        """
         a_dict = OrderedDict()
         a_dict["an_other_key"] = "a value"
         a_dict["a_key"] = 5
         self.my_header = Header("some tag", a_dict)
 
     def test_create_header(self):
+        """
+
+        :return:
+        """
         a = Header("a tag")
         self.assertEqual(a.level, 0)
         self.assertEqual(a.tag, "a tag")
@@ -212,10 +324,14 @@ class TestsHeader(unittest.TestCase):
             Header()
 
     def test_equality(self):
+        """
+
+        :return:
+        """
         # Test __eq__
         a_header = Header("some tag")
         self.assertFalse(a_header == self.my_header)
-        a_header = Header("some tag", dict(a_key=4, an_other = "a value"))
+        a_header = Header("some tag", dict(a_key=4, an_other="a value"))
         self.assertFalse(a_header == self.my_header)
         a_dict = OrderedDict()
         a_dict["an_other_key"] = "a value"
@@ -224,6 +340,10 @@ class TestsHeader(unittest.TestCase):
         self.assertTrue(a_header == self.my_header)
 
     def test_representation(self):
+        """
+
+        :return:
+        """
         # Test __str__ and __repr__
         self.assertEqual(str(self.my_header), '<?some tag an_other_key="a value" a_key="5"?>')
         self.assertEqual(repr(self.my_header), '<?some tag an_other_key="a value" a_key="5"?>')
@@ -232,14 +352,26 @@ class TestsHeader(unittest.TestCase):
         self.assertEqual(repr(an_other_header), "<?a tag?>")
 
     def test_length(self):
+        """
+
+        :return:
+        """
         # Test __len__
         self.assertEqual(len(self.my_header), 45)
 
     def test_dump(self):
+        """
+
+        :return:
+        """
         # Test dump
         self.assertEqual(self.my_header.dump(), '<?some tag an_other_key="a value" a_key="5"?>')
 
     def test_copy(self):
+        """
+
+        :return:
+        """
         # Test __copy__
         an_other_header = copy(self.my_header)
         self.assertTrue(isinstance(an_other_header, Header))
@@ -248,14 +380,25 @@ class TestsHeader(unittest.TestCase):
         self.assertDictEqual(an_other_header.attrib, self.my_header.attrib)
 
     def test_dump_attrib(self):
+        """
+
+        :return:
+        """
         # Test _dump_attrib
         self.assertEqual(self.my_header._dump_attrib(), 'an_other_key="a value" a_key="5"')
         self.assertEqual(self.my_header._dump_attrib(sort=True), 'a_key="5" an_other_key="a value"')
 
 
 class TestElement(unittest.TestCase):
+    """
+
+    """
 
     def setUp(self):
+        """
+
+        :return:
+        """
         a_dict = OrderedDict()
         a_dict["an_other_key"] = "a value"
         a_dict["a_key"] = 5
@@ -265,6 +408,10 @@ class TestElement(unittest.TestCase):
         self.my_other_element.append(copy(self.my_element))
 
     def test_create_element(self):
+        """
+
+        :return:
+        """
         with self.assertRaises(TypeError):
             Element()
         a = Element("a tag")
@@ -283,10 +430,14 @@ class TestElement(unittest.TestCase):
         self.assertEqual(b.children, [a])
 
     def test_equality(self):
+        """
+
+        :return:
+        """
         # Test __eq__
         an_element = Element("some tag")
         self.assertFalse(an_element == self.my_element)
-        an_element = Element("some tag", attrib=dict(a_key=4, an_other = "a value"))
+        an_element = Element("some tag", attrib=dict(a_key=4, an_other="a value"))
         self.assertFalse(an_element == self.my_element)
         a_dict = OrderedDict()
         a_dict["an_other_key"] = "a value"
@@ -295,19 +446,37 @@ class TestElement(unittest.TestCase):
         self.assertTrue(an_element == self.my_element)
 
     def test_representation(self):
+        """
+
+        :return:
+        """
         # Test __str__ and __repr__
-        self.assertEqual(str(self.my_element), '<some tag an_other_key="a value" a_key="5"/>')
-        self.assertEqual(repr(self.my_element), '<some tag an_other_key="a value" a_key="5"/>')
+        self.assertEqual(str(self.my_element),
+                         '<some tag an_other_key="a value" a_key="5"/>')
+        self.assertEqual(repr(self.my_element),
+                         '<some tag an_other_key="a value" a_key="5"/>')
         an_other_header = Header("a tag")
-        self.assertEqual(str(self.my_other_element), '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
-        self.assertEqual(repr(self.my_other_element), '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
+        self.assertEqual(str(self.my_other_element),
+                         '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t'
+                         '<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
+        self.assertEqual(repr(self.my_other_element),
+                         '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t'
+                         '<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
 
     def test_length(self):
+        """
+
+        :return:
+        """
         # Test __len__
         self.assertEqual(len(self.my_element), 0)
         self.assertEqual(len(self.my_other_element), 2)
 
     def test_set_text(self):
+        """
+
+        :return:
+        """
         # Test set_text
         my_element = Element("a tag")
         text1 = "some text"
@@ -319,6 +488,10 @@ class TestElement(unittest.TestCase):
         self.assertEqual(my_element.text, "\n".join([text1, text2]))
 
     def test_dump(self):
+        """
+
+        :return:
+        """
         # Test dump
         self.assertEqual(Element("a tag").dump(), '<a tag/>')
         an_element = Element("a tag")
@@ -326,9 +499,15 @@ class TestElement(unittest.TestCase):
         self.assertEqual(an_element.dump(), '<a tag>\n\t<!--a comment-->\n</a tag>')
         self.assertEqual(Element("a tag", text="a text").dump(), '<a tag> a text </a tag>')
         self.assertEqual(self.my_element.dump(), '<some tag an_other_key="a value" a_key="5"/>')
-        self.assertEqual(self.my_other_element.dump(), '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
+        self.assertEqual(self.my_other_element.dump(),
+                         '<an other tag an_other_key="a value" a_key="5">\tsome text\n\t<!--a comment-->\n\t'
+                         '<some tag an_other_key="a value" a_key="5"/>\n</an other tag>')
 
     def test_copy(self):
+        """
+
+        :return:
+        """
         # Test __copy__
         an_other_element = copy(self.my_other_element)
         self.assertTrue(isinstance(an_other_element, Element))
@@ -339,11 +518,19 @@ class TestElement(unittest.TestCase):
         self.assertEqual(an_other_element.children, self.my_other_element.children)
 
     def test_dump_attrib(self):
+        """
+
+        :return:
+        """
         # Test _dump_attrib
         self.assertEqual(self.my_element._dump_attrib(), 'an_other_key="a value" a_key="5"')
         self.assertEqual(self.my_element._dump_attrib(sort=True), 'a_key="5" an_other_key="a value"')
 
     def test_children_management(self):
+        """
+
+        :return:
+        """
         # Test append, extend, insert, remove
         my_element = Element("a tag")
         my_comment = Comment("a comment")
@@ -378,6 +565,10 @@ class TestElement(unittest.TestCase):
             my_element.extend(["an element", my_comment, dict(a_key="a_value")])
 
     def test_update_level(self):
+        """
+
+        :return:
+        """
         # Test update_level
         self.assertEqual(self.my_other_element.level, 0)
         for elt in self.my_other_element.children:
@@ -396,13 +587,25 @@ class TestElement(unittest.TestCase):
             self.assertEqual(elt.level, 1)
 
     def test_dump_children(self):
+        """
+
+        :return:
+        """
         self.assertEqual(self.my_element._dump_children(), "")
-        self.assertEqual(self.my_other_element._dump_children(), '\t<!--a comment-->\n\t<some tag an_other_key="a value" a_key="5"/>')
+        self.assertEqual(self.my_other_element._dump_children(),
+                         '\t<!--a comment-->\n\t<some tag an_other_key="a value" a_key="5"/>')
 
 
 class TestBuildDictAttrib(unittest.TestCase):
+    """
+
+    """
 
     def test_build_dict_attrib(self):
+        """
+
+        :return:
+        """
         str_1 = 'a_key = "5 " test4key="etc-7 "'
         test_1 = _build_dict_attrib(str_1)
         str_2 = ' a_key ="5" test4key="etc-7" '
@@ -424,8 +627,15 @@ class TestBuildDictAttrib(unittest.TestCase):
 
 
 class TestFindXMLHeader(unittest.TestCase):
+    """
+
+    """
 
     def test_several_header(self):
+        """
+
+        :return:
+        """
         str_1 = '<? xml encoding="utf-8"?> <my_beacon>a test value</my_beacon><-- a comment --><? ?><a_beacon/>'
         with self.assertRaises(Exception):
             _find_xml_header(str_1)
@@ -433,6 +643,10 @@ class TestFindXMLHeader(unittest.TestCase):
             _find_xml_header(str_1, verbose=True)
 
     def test_no_header(self):
+        """
+
+        :return:
+        """
         str_1 = '<my_beacon>a test value</my_beacon> <-- a comment --><a_beacon/>'
         rep_1 = _find_xml_header(str_1)
         rep_2 = _find_xml_header(str_1, verbose=True)
@@ -444,11 +658,19 @@ class TestFindXMLHeader(unittest.TestCase):
         self.assertEqual(rep_2[0], str_1)
 
     def test_not_beginning_header(self):
+        """
+
+        :return:
+        """
         str_1 = '<my_beacon>a test value</my_beacon><-- a comment --><? ?><a_beacon/>'
         with self.assertRaises(Exception):
             _find_xml_header(str_1, verbose=True)
 
     def test_correct_header(self):
+        """
+
+        :return:
+        """
         str_1 = '<? xml encoding="utf-8"?> <my_beacon>a test value</my_beacon><-- a comment --><a_beacon/>'
         str_2 = '<my_beacon>a test value</my_beacon><-- a comment --><a_beacon/>'
         rep_str, rep_header = _find_xml_header(str_1)
@@ -457,8 +679,15 @@ class TestFindXMLHeader(unittest.TestCase):
 
 
 class TestFindXMLComment(unittest.TestCase):
+    """
+
+    """
 
     def test_comments(self):
+        """
+
+        :return:
+        """
         str_1 = '<my_beacon>a test value</my_beacon><-!- a comment --><a_beacon/>'
         str_2 = '<!-- a comment --><my_beacon>a test value</my_beacon><a_beacon/>'
         str_3 = '<!-- a comment --><!-- an other comment --><my_beacon>a test value</my_beacon><a_beacon/>'
@@ -475,7 +704,7 @@ class TestFindXMLComment(unittest.TestCase):
         rep_str_3, rep_comment_3 = _find_xml_comment(str_3)
         self.assertEqual(rep_str_3, '<!-- an other comment --><my_beacon>a test value</my_beacon><a_beacon/>')
         self.assertTrue(rep_comment_3 == a_comment)
-        rep_str_4, rep_comment_4 = _find_xml_comment(str_4,verbose=True)
+        rep_str_4, rep_comment_4 = _find_xml_comment(str_4, verbose=True)
         self.assertEqual(rep_str_4, '<my_beacon>a test value</my_beacon><!-- an other comment --><a_beacon/>')
         self.assertTrue(rep_comment_4 == a_comment)
         rep_str_5, rep_comment_5 = _find_xml_comment(str_5, verbose=True)
@@ -484,8 +713,15 @@ class TestFindXMLComment(unittest.TestCase):
 
 
 class TestFindOnePartElement(unittest.TestCase):
+    """
+
+    """
 
     def test_no_one_element(self):
+        """
+
+        :return:
+        """
         str_1 = "<my_beacon>a test value</my_beacon>"
         rep_str_1, rep_element_1 = _find_one_part_element(str_1)
         self.assertEqual(str_1, rep_str_1)
@@ -496,6 +732,10 @@ class TestFindOnePartElement(unittest.TestCase):
         self.assertIsNone(rep_element_2)
 
     def test_one_part_element(self):
+        """
+
+        :return:
+        """
         str_1 = ' < an_element attr ="5" attr2="3>=2"/> <an_element /> '
         str_2 = ' <an_element />'
         test_dict = OrderedDict()
@@ -510,19 +750,37 @@ class TestFindOnePartElement(unittest.TestCase):
 
 
 class TestFindInitTwoPartsElement(unittest.TestCase):
+    """
+
+    """
 
     @unittest.skipUnless(False, "Not yet implemented")
     def test_no_init_two_parts_element(self):
+        """
+
+        :return:
+        """
         pass
 
     @unittest.skipUnless(False, "Not yet implemented")
     def test_init_two_parts_element(self):
+        """
+
+        :return:
+        """
         pass
 
 
 class TestFindText(unittest.TestCase):
+    """
+
+    """
 
     def test_find_text(self):
+        """
+
+        :return:
+        """
         str_1 = "a text "
         with self.assertRaises(Exception):
             _find_text(str_1, fatal_sep=True)
@@ -562,10 +820,18 @@ class TestFindText(unittest.TestCase):
 
 
 class TestPreTreatment(unittest.TestCase):
+    """
+
+    """
 
     @unittest.skipUnless(False, "Check why it doesn't work...")
     def test_iterate_on_characters_to_check(self):
-        str_1 = "<? a header ?>< a_beacon /><!-- some comments --> some text with special ' > \" characters < < an_other_beacon> <!-- with a comment --> </ an_other_beacon >"
+        """
+
+        :return:
+        """
+        str_1 = "<? a header ?>< a_beacon /><!-- some comments --> some text with special ' > \" characters < " \
+                "< an_other_beacon> <!-- with a comment --> </ an_other_beacon >"
         test_1 = iterate_on_characters_to_check(str_1)
         rep_1 = [(0, "begin_header"), (12, "end_header"), (14, "lower_than"), (26, "greater_than"),
                  (27, "begin_comment"), (46, "end_comment"), (73, "single_quote"), (75, "greater_than"),
@@ -580,6 +846,10 @@ class TestPreTreatment(unittest.TestCase):
             iterate_on_characters_to_check(str_3, verbose=True)
 
     def test_iterate_on_string(self):
+        """
+
+        :return:
+        """
         str_1 = "a long \n string with several \n separator\n"
         test_1 = iterate_on_string(str_1, verbose=True)
         rep_1 = [("a long \n", 0), (" string with several \n", 8), (" separator\n", 30)]
@@ -590,9 +860,15 @@ class TestPreTreatment(unittest.TestCase):
         self.assertListEqual(list(test_2), rep_2)
 
     def test_pre_xml_string_format(self):
+        """
+
+        :return:
+        """
         # TODO: add a test with a header
-        str_1 = '<my_beacon>\n\n<!-- a comment element <=> -->a test value < an element attr ="><5" attr2="3>=2"/>     <a beacon>\t</a beacon>\n \t</my_beacon attr=">">'
-        test_str_1 = '<my_beacon> <!-- a comment element &lt=&gt -->a test value < an element attr ="&gt&lt5" attr2="3&gt=2"/> <a beacon> </a beacon> </my_beacon attr="&gt">'
+        str_1 = '<my_beacon>\n\n<!-- a comment element <=> -->a test value < an element attr ="><5" attr2="3>=2"/>   ' \
+                '  <a beacon>\t</a beacon>\n \t</my_beacon attr=">">'
+        test_str_1 = '<my_beacon> <!-- a comment element &lt=&gt -->a test value ' \
+                     '< an element attr ="&gt&lt5" attr2="3&gt=2"/> <a beacon> </a beacon> </my_beacon attr="&gt">'
         str_2 = '<my_beacon> a test <value </my_beacon>'
         str_3 = '<my_beacon> a test "value </my_beacon>'
         str_4 = '><my_beacon> a test >value </my_beacon>'
@@ -641,7 +917,12 @@ class TestPreTreatment(unittest.TestCase):
         self.assertEqual(_pre_xml_string_format(str_12, verbose=True), test_str_12)
 
     def test_replace_char_at_pos_by_string(self):
-        test_string = '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon>'
+        """
+
+        :return:
+        """
+        test_string = '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> ' \
+                      '<a beacon></a beacon> </my_beacon>'
         with self.assertRaises(Exception):
             replace_char_at_pos_by_string(test_string, "t", "test", 5, 5)
         with self.assertRaises(Exception):
@@ -651,22 +932,41 @@ class TestPreTreatment(unittest.TestCase):
         with self.assertRaises(Exception):
             replace_char_at_pos_by_string(test_string, "t", "test", 582, 582)
         test_1 = replace_char_at_pos_by_string(test_string, "<", "&gt", 0, 0)
-        self.assertEqual(test_1, '&gtmy_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon>')
+        self.assertEqual(test_1,
+                         '&gtmy_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> '
+                         '<a beacon></a beacon> </my_beacon>')
         test_2 = replace_char_at_pos_by_string(test_string, "<my_b", "<some_test_beacons /> <my_b", 0, 5)
-        self.assertEqual(test_2, '<some_test_beacons /> <my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon>')
+        self.assertEqual(test_2,
+                         '<some_test_beacons /> <my_beacon><!-- a comment element -->a test value '
+                         '< an element attr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon>')
         test_3 = replace_char_at_pos_by_string(test_string, "</a beacon> </my_beacon>", "</my_beacon>", 98, 122)
-        self.assertEqual(test_3, '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> <a beacon></my_beacon>')
+        self.assertEqual(test_3,
+                         '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> '
+                         '<a beacon></my_beacon>')
         test_4 = replace_char_at_pos_by_string(test_string, "an element a", "", 52, 64)
-        self.assertEqual(test_4, '<my_beacon><!-- a comment element -->a test value < ttr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon>')
+        self.assertEqual(test_4,
+                         '<my_beacon><!-- a comment element -->a test value < ttr ="5" attr2="3>=2"/> <a beacon>'
+                         '</a beacon> </my_beacon>')
         test_5 = replace_char_at_pos_by_string(test_string, ">", "&lt", 121, 121)
-        self.assertEqual(test_5, '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> <a beacon></a beacon> </my_beacon&lt')
+        self.assertEqual(test_5,
+                         '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3>=2"/> '
+                         '<a beacon></a beacon> </my_beacon&lt')
         test_6 = replace_char_at_pos_by_string(test_string, ">", "&lt", 81, 81, verbose=True)
-        self.assertEqual(test_6, '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3&lt=2"/> <a beacon></a beacon> </my_beacon>')
+        self.assertEqual(test_6,
+                         '<my_beacon><!-- a comment element -->a test value < an element attr ="5" attr2="3&lt=2"/> '
+                         '<a beacon></a beacon> </my_beacon>')
 
 
 class TestParser(unittest.TestCase):
+    """
+
+    """
 
     def test_find_next_element(self):
+        """
+
+        :return:
+        """
         str_1 = '<? a_header key="value" ?><!--some comments-->  '
         rep_1 = find_next_element(str_1, level=5, verbose=True)
         self.assertEqual(len(rep_1), 2)
@@ -770,7 +1070,12 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(rep_11[1][2])
 
     def test_parse_string_rewrite(self):
-        str_1 = "<? a_header ?>some introducing text<!-- a very long comment -->< a_tag> some text< an_other_beacon /></a_tag>"
+        """
+
+        :return:
+        """
+        str_1 = "<? a_header ?>some introducing text<!-- a very long comment -->" \
+                "< a_tag> some text< an_other_beacon /></a_tag>"
         rep_text_1 = "some introducing text"
         rep_comments_1 = [Comment("a very long comment"), ]
         rep_headers_1 = Header("a_header")
@@ -797,6 +1102,10 @@ class TestParser(unittest.TestCase):
             parse_xml_string_rewrite(str_3)
 
     def test_generate_list_from_xml_string(self):
+        """
+
+        :return:
+        """
         str_1 = "<!-- a very long comment -->< a_tag> some text< an_other_beacon /></a_tag>"
         rep_1 = [(0, "comment", Comment("a very long comment")), (0, "start_two_parts_element", Element("a_tag")),
                  (1, "text", "some text"), (1, "single_part_element", Element("an_other_beacon")),
@@ -809,6 +1118,10 @@ class TestParser(unittest.TestCase):
             generate_list_from_xml_string(str_2)
 
     def test_generate_xml_tree_from_list(self):
+        """
+
+        :return:
+        """
         list_1 = [(0, "comment", Comment("a comment")), (0, "header", Header("a header")), (0, "text", "some text"),
                   (0, "single_part_element", Element("an element"))]
         test_1 = generate_xml_tree_from_list(list_1)

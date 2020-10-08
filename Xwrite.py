@@ -18,7 +18,7 @@ import datetime
 from io import open
 
 # Utilities
-from utils import dr2xml_error, print_struct
+from utils import Dr2xmlError
 
 # Global variables and configuration tools
 from config import get_config_variable
@@ -26,8 +26,7 @@ from config import get_config_variable
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_lset_with_default, get_variable_from_lset_without_default, \
     get_variable_from_sset_with_default, get_source_id_and_type, get_variable_from_sset_without_default, \
-    get_variable_from_sset_else_lset_with_default, is_key_in_lset, is_key_in_sset, get_lset_iteritems, \
-    get_sset_iteritems, format_dict_for_printing
+    get_variable_from_sset_else_lset_with_default, is_key_in_lset, is_key_in_sset, format_dict_for_printing
 # Interface to Data Request
 from dr_interface import get_DR_version
 
@@ -35,8 +34,8 @@ from xml_interface import create_xml_element, create_xml_sub_element, create_str
     remove_subelement_in_xml_element, add_xml_comment_to_element, create_pretty_xml_doc
 
 # Settings tools
-from analyzer import DRgrid2gridatts, analyze_cell_time_method, freq2datefmt, longest_possible_period, \
-    Cmip6Freq2XiosFreq
+from analyzer import DR_grid_to_grid_atts, analyze_cell_time_method, freq2datefmt, longest_possible_period, \
+    cmip6_freq_to_xios_freq
 
 # CFsites tools
 from cfsites import cfsites_domain_id, add_cfsites_in_defs, cfsites_grid_id, cfsites_input_filedef
@@ -50,13 +49,13 @@ from grids import change_domain_in_grid, change_axes_in_grid, get_grid_def_with_
 # Variables tools
 from vars_cmor import ping_alias
 from vars_home import get_simplevar
-from vars_selection import get_sc, endyear_for_CMORvar, get_grid_choice
+from vars_selection import get_sc, endyear_for_cmor_var, get_grid_choice
 
 # Post-processing tools
 from postprocessing import process_vertical_interpolation, process_zonal_mean, process_diurnal_cycle
 
 # XIOS tools
-from Xparse import id2gridid, idHasExprWithAt
+from Xparse import id2gridid, id_has_expr_with_at
 
 # File splitting tools
 from file_splitting import split_frequency_for_variable
@@ -274,8 +273,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         else:
             target_hgrid_id = get_variable_from_lset_without_default("ping_variables_prefix") + grid
             zgrid_id = "TBD : Should create zonal grid for CMIP6 standard grid %s" % grid
-        grid_label, grid_resolution, grid_description = DRgrid2gridatts(grid, is_dev=(grid == "native" and
-                                                                                      sv.type == "dev"))
+        grid_label, grid_resolution, grid_description = DR_grid_to_grid_atts(grid, is_dev=(grid == "native" and
+                                                                                           sv.type == "dev"))
 
     if table[-1:] == "Z":  # e.g. 'AERmonZ','EmonZ', 'EdayZ'
         grid_label += "z"
@@ -307,11 +306,11 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     with open(cvspath + project + "_experiment_id.json", "r") as json_fp:
         CMIP6_experiments = json.loads(json_fp.read())['experiment_id']
         if get_variable_from_sset_without_default('experiment_id') not in CMIP6_experiments:
-            raise dr2xml_error("Issue getting experiment description in CMIP6 CV for %20s" % sset['experiment_id'])
+            raise Dr2xmlError("Issue getting experiment description in CMIP6 CV for %20s" % sset['experiment_id'])
         expid = get_variable_from_sset_without_default('experiment_id')
         expid_in_filename = get_variable_from_sset_with_default('expid_in_filename', expid)
         if "_" in expid_in_filename:
-            raise dr2xml_error("Cannot use character '_' in expid_in_filename (%s)" % expid_in_filename)
+            raise Dr2xmlError("Cannot use character '_' in expid_in_filename (%s)" % expid_in_filename)
         exp_entry = CMIP6_experiments[expid]
         experiment = get_variable_from_sset_with_default("experiment", exp_entry["experiment"])
         description = get_variable_from_sset_with_default("description", exp_entry['description'])
@@ -326,8 +325,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             parent_activity_id = get_variable_from_sset_with_default("activity_id", exp_entry["parent_activity_id"])
         if isinstance(parent_activity_id, list) and len(parent_activity_id) > 1:
             parent_activity_id = reduce(lambda x, y: x+" "+y, parent_activity_id)
-        parent_experiment_id =  get_variable_from_sset_else_lset_with_default("parent_experiment_id",
-                                                                              default=exp_entry['parent_experiment_id'])
+        parent_experiment_id = get_variable_from_sset_else_lset_with_default("parent_experiment_id",
+                                                                             default=exp_entry['parent_experiment_id'])
         if isinstance(parent_experiment_id, list) and len(parent_experiment_id) > 1:
             parent_experiment_id = reduce(lambda x, y: x+" "+y, parent_experiment_id)
         required_components = exp_entry['required_model_components']  # .split(" ")
@@ -349,7 +348,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
                 print("Warning: Model component %s is present but not required nor allowed (%s)" %
                       (c, repr(allowed_components)))
     if not ok:
-        raise dr2xml_error("Issue with model components")
+        raise Dr2xmlError("Issue with model components")
     #
     # --------------------------------------------------------------------
     # Set NetCDF output file name according to the DRS
@@ -393,7 +392,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     if sv.type in ["perso", "dev"]:
         with open(list_perso_and_dev_file_name, mode="a", encoding="utf-8") as list_perso_and_dev:
             list_perso_and_dev.write(".*{}.*\n".format("_".join([varname_for_filename, table, source_id,
-                                                               expid_in_filename, member_id, grid_label])))
+                                                                 expid_in_filename, member_id, grid_label])))
     #
     if not (is_key_in_lset('mip_era') or is_key_in_sset("mip_era")):
         further_info_url = "https://furtherinfo.es-doc.org/%s.%s.%s.%s.%s.%s" % (
@@ -415,7 +414,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             max_split_freq = get_variable_from_lset_with_default('max_split_freq', None)
         if max_split_freq is not None:
             if max_split_freq[0:-1] != "y":
-                dr2xml_error("max_split_freq must end with an 'y' (%s)" % max_split_freq)
+                Dr2xmlError("max_split_freq must end with an 'y' (%s)" % max_split_freq)
             split_freq = "{}y".format(min(int(max_split_freq[0:-1]), int(split_freq[0:-1])))
     # print "split_freq: %-25s %-10s %-8s"%(sv.label,sv.mipTable,split_freq)
     #
@@ -426,7 +425,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     dict_file = OrderedDict()
     dict_file["id"] = "_".join([sv.label, table, grid_label])
     dict_file["name"] = filename
-    freq = longest_possible_period(Cmip6Freq2XiosFreq(sv.frequency, table),
+    freq = longest_possible_period(cmip6_freq_to_xios_freq(sv.frequency, table),
                                    get_variable_from_lset_with_default("too_long_periods", []))
     dict_file["output_freq"] = freq
     dict_file["append"] = "true"
@@ -445,7 +444,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         # Try to get enddate for the CMOR variable from the DR
         if sv.cmvar is not None:
             # print "calling endyear_for... for %s, with year="%(sv.label), year
-            lastyear = endyear_for_CMORvar(sv.cmvar, expid, year, sv.label in debug)
+            lastyear = endyear_for_cmor_var(sv.cmvar, expid, year, sv.label in debug)
             # print "lastyear=",lastyear," enddate=",enddate
         if lastyear is None or (enddate is not None and lastyear >= int(enddate[0:4])):
             # DR doesn't specify an end date for that var, or a very late one
@@ -466,7 +465,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
                       (lastyear, sv.label, table, year))
             endyear = "{:04d}".format(lastyear + 1)
             if lastyear < 1000:
-                dr2xml_error(
+                Dr2xmlError(
                     "split_last_date year %d derived from DR for variable %s in table %s for year %d does not make "
                     "sense except maybe for paleo runs; please set the right value for 'end_year' in experiment's "
                     "settings file" % (lastyear, sv.label, table, year))
@@ -541,8 +540,9 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     wr(xml_file, 'grid', grid_description)
     wr(xml_file, 'grid_label', grid_label)
     wr(xml_file, 'nominal_resolution', grid_resolution)
-    comment = get_variable_from_lset_with_default('comment', '') +\
-              " " + get_variable_from_sset_with_default('comment', '') + dynamic_comment
+    comment = " ".join([get_variable_from_lset_with_default('comment', ''),
+                        get_variable_from_sset_with_default('comment', ''),
+                        dynamic_comment])
     wr(xml_file, 'comment', comment)
     wr(xml_file, 'history', sset, default='none')
     wr(xml_file, "initialization_index", initialization_index, num_type="int")
@@ -563,7 +563,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             try:
                 inst = json.loads(json_fp.read())['institution_id'][institution_id]
             except:
-                raise dr2xml_error("Fatal: Institution_id for %s not found in CMIP6_CV at %s" % (institution, cvspath))
+                raise Dr2xmlError("Fatal: Institution_id for %s not found in CMIP6_CV at %s" % (institution, cvspath))
     wr(xml_file, "institution", inst)
     #
     with open(cvspath + project + "_license.json", "r") as json_fp:
@@ -593,7 +593,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             if experiment_id in get_variable_from_lset_without_default('branching', source_id) and \
                     get_variable_from_sset_without_default("branch_year_in_parent") not in \
                     get_variable_from_lset_without_default('branching', source_id, experiment_id, 1):
-                dr2xml_error(
+                Dr2xmlError(
                     "branch_year_in_parent (%d) doesn't belong to the list of branch_years declared for this experiment"
                     " %s" % (get_variable_from_sset_without_default("branch_year_in_parent"),
                              get_variable_from_lset_without_default('branching', source_id, experiment_id, 1)))
@@ -634,7 +634,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         if is_key_in_lset('source'):
             source = get_variable_from_lset_without_default('source')
         else:
-            raise dr2xml_error("Fatal: source for %s not found in CMIP6_CV at %s, nor in lset" % (source_id, cvspath))
+            raise Dr2xmlError("Fatal: source for %s not found in CMIP6_CV at %s, nor in lset" % (source_id, cvspath))
     wr(xml_file, 'source', source)
     wr(xml_file, 'source_id', source_id)
     if isinstance(source_type, list):
@@ -841,8 +841,8 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
         if sv.frequency == "1hrCM":
             last_field_id, last_grid_id = process_diurnal_cycle(last_field_id, field_defs, grid_defs, axis_defs)
         else:
-            raise dr2xml_error("Cannot handle climatology cell_method for frequency %s and variable "
-                               % sv.frequency, sv.label)
+            raise Dr2xmlError("Cannot handle climatology cell_method for frequency %s and variable %s"
+                              % (sv.frequency, sv.label))
     #
     # --------------------------------------------------------------------
     # Create intermediate field_def for enforcing operation upstream
@@ -895,7 +895,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     if operation == 'instant':
         for ts in get_variable_from_lset_with_default('special_timestep_vars', []):
             if sv.label in get_variable_from_lset_without_default('special_timestep_vars', ts):
-                xios_freq = Cmip6Freq2XiosFreq(sv.frequency, table)
+                xios_freq = cmip6_freq_to_xios_freq(sv.frequency, table)
                 # works only if units are different :
                 rep_dict["freq_offset"] = "-".join([xios_freq, ts])
     #
@@ -913,7 +913,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
         prec = "2"
         missing_value = "0"  # 16384"
     else:
-        raise dr2xml_error("prec=%s for sv=%s" % (sv.prec, sv.label))
+        raise Dr2xmlError("prec=%s for sv=%s" % (sv.prec, sv.label))
     rep_dict["detect_missing_value"] = detect_missing
     rep_dict["default_value"] = missing_value
     rep_dict["prec"] = prec
@@ -930,17 +930,17 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     # --------------------------------------------------------------------
     rep_dict["operation"] = operation
     #
-    if not idHasExprWithAt(alias, context_index):
+    if not id_has_expr_with_at(alias, context_index):
         # either no expr, or expr without an @  ->
         # may use @ for optimizing operations order (average before re-gridding)
         if last_grid_id != grid_id_in_ping:
             if operation in ['average', 'instant']:
                 # do use @ for optimizing :
-                rep_dict["freq_op"] = longest_possible_period(Cmip6Freq2XiosFreq(sv.frequency, table),
+                rep_dict["freq_op"] = longest_possible_period(cmip6_freq_to_xios_freq(sv.frequency, table),
                                                               get_variable_from_lset_with_default("too_long_periods",
                                                                                                   []))
                 # must set freq_op (this souldn't be necessary, but is needed with Xios 1442)
-                rep_dict["freq_op"] = longest_possible_period(Cmip6Freq2XiosFreq(sv.frequency, table),
+                rep_dict["freq_op"] = longest_possible_period(cmip6_freq_to_xios_freq(sv.frequency, table),
                                                               get_variable_from_lset_with_default("too_long_periods",
                                                                                                   []))
     else:  # field has an expr, with an @
@@ -952,12 +952,12 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
             rep_dict["expr"] = "_reset_"
         if operation == 'average':
             warnings_for_optimisation.append(alias)
-        rep_dict["freq_op"] = longest_possible_period(Cmip6Freq2XiosFreq(sv.frequency, table),
+        rep_dict["freq_op"] = longest_possible_period(cmip6_freq_to_xios_freq(sv.frequency, table),
                                                       get_variable_from_lset_with_default("too_long_periods", []))
 
     rep = create_xml_element(tag="field", attrib=rep_dict)
 
-    if not idHasExprWithAt(alias, context_index) and last_grid_id != grid_id_in_ping:
+    if not id_has_expr_with_at(alias, context_index) and last_grid_id != grid_id_in_ping:
         # either no expr, or expr without an @  ->
         # may use @ for optimizing operations order (average before re-gridding)
         if operation == 'average':
@@ -985,7 +985,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     desc = sv.description
     # if desc :
     # desc=desc.replace(">","&gt;").replace("<","&lt;").replace("&","&amp;").replace("'","&apos;").replace('"',"&quot;")
-    if desc:
+    if desc is not None and desc:
         desc = desc.replace(">", "&gt;").replace("<", "&lt;").strip()
     rep.append(wrv("description", desc))
     #
@@ -1089,7 +1089,7 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
                     scalar_dict["bounds_name"] = "{}_bounds".format(sdim.out_name)
                 except:
                     if sdim.label != "lambda550nm":
-                        raise dr2xml_error("Issue for var %s with dim %s bounds=%s" % (sv.label, sdim.label, bounds))
+                        raise Dr2xmlError("Issue for var %s with dim %s bounds=%s" % (sv.label, sdim.label, bounds))
             #
             if sdim.axis != '':
                 # Space axis, probably Z
@@ -1203,7 +1203,7 @@ def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_ax
         scalar_dict["name"] = scalar_name
         create_xml_sub_element(xml_element=rep, tag="scalar", attrib=scalar_dict)
     else:
-        raise dr2xml_error("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
+        raise Dr2xmlError("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
     # Remove any axis if asked for
     if remove_axis:
         remove_subelement_in_xml_element(xml_element=rep, tag="axis")
@@ -1275,7 +1275,8 @@ def write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, f
     add_xml_comment_to_element(element=xml_context, text="CMIP6 Data Request version {}".format(get_DR_version()))
     add_xml_comment_to_element(element=xml_context, text="CMIP6-CV version {}".format("??"))
     add_xml_comment_to_element(element=xml_context,
-                               text="CMIP6_conventions_version {}".format(get_config_variable("CMIP6_conventions_version")))
+                               text="CMIP6_conventions_version {}".format(
+                                   get_config_variable("CMIP6_conventions_version")))
     add_xml_comment_to_element(element=xml_context, text="dr2xml version {}".format(get_config_variable("version")))
     add_xml_comment_to_element(element=xml_context,
                                text="\n".join(["Lab_and_model settings", format_dict_for_printing("lset")]))
@@ -1300,7 +1301,7 @@ def write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, f
                         and svar.mipVarLabel in count:
                     form = "If you really want to actually produce both %s and %s in table %s, " + \
                            "you must set 'use_cmorvar_label_in_filename' to True in lab settings"
-                    raise dr2xml_error(form % (svar.label, count[svar.mipVarLabel].label, table))
+                    raise Dr2xmlError(form % (svar.label, count[svar.mipVarLabel].label, table))
                 count[svar.mipVarLabel] = svar
                 for grid in svar.grids:
                     a, hgrid, b, c, d = get_variable_from_lset_without_default('grids', get_grid_choice(), context)
