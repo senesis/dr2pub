@@ -9,10 +9,6 @@
 .. versionadded:: 1.0
 
 
-
-Functions
----------
-
 .. autofunction:: config.set_config_variable
 
 .. autofunction:: config.get_config_variable

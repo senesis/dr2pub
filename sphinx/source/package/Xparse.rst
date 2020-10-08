@@ -9,9 +9,6 @@
 .. versionadded:: 1.0
 
 
-Functions
----------
-
 .. autofunction:: Xparse.read_src
 
 .. autofunction:: Xparse.gattrib
@@ -35,9 +32,5 @@ Functions
 .. autofunction:: Xparse.id2grid
 
 .. autofunction:: Xparse.idHasExprWithAt
-
-
-Classes
--------
 
 .. autoclass:: Xparse.Xparse_error

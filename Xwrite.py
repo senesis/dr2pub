@@ -68,14 +68,25 @@ warnings_for_optimisation = []
 
 def wr(out, key, dic_or_val=None, num_type="string", default=None):
     """
-    Short cut for a repetitive pattern : add in 'out'
-    a string variable name and value
-    If dic_or_val is not None
-      if  dic_or_val is a dict,
-        if key is in value is dic_or_val[key],
-        otherwise use default as value , except if default is False
-      otherwise, use arg dic_or_val as value if not None nor False,
-    otherwise use value of local variable 'key'
+    Short cut for a repetitive pattern : add in 'out' a string variable name and value.
+    The value of the XML variable created is defined using the following algorithm:
+
+    - if ``dic_or_val`` is not ``None``:
+        - if  ``dic_or_val`` is a ``dict``:
+            - if ``key`` is in ``dic_or_val``:
+                - ``value=dic_or_val[key]``
+            - else if not ``default=False``:
+                - ``value=default``
+        - else if ``dic_or_val`` not ``None`` nor ``False``:
+            - ``dic_or_val=value``
+    - else use value of local variable ``key``
+
+    :param out: XML element to which the variable will be added
+    :param key: key to be put in variable
+    :param dic_or_val: value or dictionary containing the value of the variable
+    :param num_type: type of the value to be added (specfic requirements if string)
+    :param default: default value to be use
+    :return: Add an XML variable to ``out``.
     """
     print_variables = get_variable_from_lset_with_default("print_variables", True)
     if not print_variables:

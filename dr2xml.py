@@ -8,6 +8,7 @@ A few functions for processing
   - a set of settings related to a laboratory, and a model
   - a set of settings related to an experiment (i.e. a set of numerical
       simulations),
+
 to generate a set of xml-syntax files used by XIOS (see
 https://forge.ipsl.jussieu.fr/ioserver/) for outputing geophysical
 variable fields
@@ -15,20 +16,18 @@ variable fields
 First version (0.8) : S.Senesi (CNRM) - sept 2016
 
 Changes :
-  oct 2016 - Marie-Pierre Moine (CERFACS) - handle 'home' Data Request
-                               in addition
-  dec 2016 - S.Senesi (CNRM) - improve robustness
-  jan 2017 - S.Senesi (CNRM) - handle split_freq; go single-var files;
-                               adapt to new DRS ...
-  feb 2017 - S.Senesi (CNRM) - handle grids and remapping;
-                               put some func in separate module
-  april-may 2017 - M-P Moine (CERFACS) : handle pressure axes ..
-  june 2017 - S.Senesi (CNRM)  introduce horizontal remapping
-  july 2017 - S.Senesi -CNRM)  improve efficieny in remapping; allow for
+  - oct 2016 - Marie-Pierre Moine (CERFACS) - handle 'home' Data Request in addition
+  - dec 2016 - S.Senesi (CNRM) - improve robustness
+  - jan 2017 - S.Senesi (CNRM) - handle split_freq; go single-var files; adapt to new DRS...
+  - feb 2017 - S.Senesi (CNRM) - handle grids and remapping; put some func in separate module
+  - april-may 2017 - M-P Moine (CERFACS) : handle pressure axes...
+  - june 2017 - S.Senesi (CNRM)  introduce horizontal remapping
+  - july 2017 - S.Senesi -CNRM)  improve efficiency in remapping; allow for
                  sampling before vert. interpolation, for filters on table, reqLink..
                  Adapt filenames to CMIP6 conventions (including date offset).
                  Handle remapping for CFsites
-  Rather look at git log for identifying further changes and contriubutors....
+
+Rather look at git log for identifying further changes and contributors....
 
 """
 ####################################
@@ -620,26 +619,40 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
                              dummies='include', printout=False, dirname="./", prefix="",
                              attributes=[], select="on_expt_and_year"):
     """
-    Using the DR module, a dict of lab settings LSET, and a dict
-    of simulation settings SSET, generate an XIOS file_defs 'file' for a
-    given XIOS 'context', which content matches
-    the DR for the experiment quoted in simu setting dict and a YEAR.
-    Makes use of CMIP6 controlled vocabulary files found in CVS_PATH
-    Reads files matching PINGFILE for analyzing dummy field_refs,
-    DUMMIES='include' : include dummy refs in file_def (useful
-                              demonstration run)
-    DUMMIES='skip'  : don't write field with a ref to a dummy
-                          (useful until ping_file is fully completed)
-    DUMMIES='forbid': stop if any dummy (useful for production run)
-    Output file is named <DIRNAME>filedefs_<CONTEXT>.xml
-    Filedefs have a CMIP6 compliant name, with prepended PREFIX
+    Using the DR module, a dict of lab settings ``lset``, and a dict
+    of simulation settings ``sset``, generate an XIOS file_defs 'file' for a
+    given XIOS ``context``, which content matches
+    the DR for the experiment quoted in simu setting dict and a ``year``.
 
     Structure of the two dicts is documented elsewhere. It includes the
     correspondance between a context and a few realms
 
-    ATTRIBUTES is a list of (name,value) pairs which are to be inserted as
-    additional file-level attributes. They are complemented with entry
-    "non_standard__attributes" of dict sset
+    :param dict lset: dictionary of laboratory settings
+    :param dict sset: dictionary of simulation settings
+    :param int year: year considered for the launch
+    :param six.string_types enddate: enddate of the simulation
+    :param six.string_types context: XIOS context considered for the launch
+    :param six.string_types cvs_path: path to controlled vocabulary to be used
+    :param six.string_types pingfiles: files which are analysed to find variables with a different name between model and Data Request
+    :param six.string_types dummies: specify how to treat dummy variables among:
+
+        - "include": include dummy refs in file_def (useful for demonstration run)
+        - "skip": don't write field with a ref to a dummy (useful until ping_file is fully completed)
+        - "forbid": stop if any dummy (useful for production run)
+
+    :param bool printout: print infos
+    :param six.string_types dirname: directory in which outputs will be created
+    :param six.string_types prefix: prefix used for each file definition
+    :param list attributes: list of (name,value) pairs which are to be inserted as
+                            additional file-level attributes. They are complemented with entry
+                            "non_standard__attributes" of dict sset
+    :param six.string_types select: make variable selection according to a criteria:
+
+        - "on_expt_and_year" or "": select output variables according to the year simulated and the experiment done
+        - "on_expt": select output variables according to the experiment done only
+        - "no": no selection of output variables
+
+    :return: An output file named dirname/filedefs_context.xml. It has a CMIP6 compliant name, with prepended prefix.
 
     """
     #
@@ -747,9 +760,9 @@ def realm_is_processed(realm, source_type):
     Tells if a realm is definitely not processed by a source type
 
     list of source-types : AGCM BGC AER CHEM LAND OGCM AOGCM
-    list of known realms : ['seaIce', '', 'land', 'atmos atmosChem', 'landIce', 'ocean seaIce',
-                            'landIce land', 'ocean', 'atmosChem', 'seaIce ocean', 'atmos',
-                             'aerosol', 'atmos land', 'land landIce', 'ocnBgChem']
+    list of known realms : 'seaIce', '', 'land', 'atmos atmosChem', 'landIce', 'ocean seaIce',
+                           'landIce land', 'ocean', 'atmosChem', 'seaIce ocean', 'atmos',
+                           'aerosol', 'atmos land', 'land landIce', 'ocnBgChem'
     """
     components = source_type.split(" ")
     rep = True

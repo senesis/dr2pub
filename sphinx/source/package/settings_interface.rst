@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: settings_interface.initialize_dict
 
 .. autofunction:: settings_interface.get_variable_from_sset_else_lset_with_default

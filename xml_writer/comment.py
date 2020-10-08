@@ -16,30 +16,53 @@ from xml_writer.utils import encode_if_needed, print_if_needed
 class Comment(Beacon):
 
     def __init__(self, comment):
+        """
+
+        :param comment:
+        """
         super(Comment, self).__init__()
         self.comment = comment
 
     def __eq__(self, other):
+        """
+
+        :param other:
+        :return:
+        """
         test = super(Comment, self).__eq__(other)
         if test:
             test = self._test_attribute_equality("comment", other)
         return test
 
     def __copy__(self):
+        """
+
+        :return:
+        """
         element = Comment(comment=self.comment)
         element.update_level(self.level)
         return element
 
     def dump(self):
+        """
+
+        :return:
+        """
         rep = "\t" * self.level + "<!--%s-->" % self.comment
         return encode_if_needed(rep)
 
 
-# XML comment regexp
+#: XML comment regexp
 _xml_comment_regexp = re.compile(r"^(?P<all>\s?<\!--\s?(?P<comment>((?!<\!--)(?!-->).)+)\s?-->)\s?")
 
 
 def _find_xml_comment(xml_string, verbose=False):
+    """
+
+    :param xml_string:
+    :param verbose:
+    :return:
+    """
     # if verbose:
     #     print("<<<find_xml_comment: XML_STRING before>>>", len(xml_string), xml_string)
     xml_string = xml_string.strip()

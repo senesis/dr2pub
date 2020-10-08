@@ -22,3 +22,4 @@ Documentation du package dr2xml
     xml_interface <xml_interface>
     Xparse <Xparse>
     Xwrite <Xwrite>
+    xml_writer <xml_writer/index>

@@ -10,9 +10,6 @@
 
  
 
-Functions
----------
-
 .. autofunction:: dr2xml.generate_file_defs
 
 .. autofunction:: dr2xml.generate_file_defs_inner

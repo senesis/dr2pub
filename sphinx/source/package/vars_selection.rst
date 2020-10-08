@@ -8,10 +8,6 @@
 .. sectionauthor:: The dr2xml Team
 .. versionadded:: 1.0
 
-
-Functions
----------
-
 .. autofunction:: vars_selection.get_grid_choice
 
 .. autofunction:: vars_selection.initialize_sn_issues

@@ -9,9 +9,6 @@
 .. versionadded:: 1.0
 
 
-Functions
----------
-
 .. autofunction:: xml_interface.create_xml_element
 
 .. autofunction:: xml_interface.create_xml_sub_element

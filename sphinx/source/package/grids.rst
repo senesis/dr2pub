@@ -9,10 +9,6 @@
 .. versionadded:: 1.0
 
 
-
-Functions
----------
-
 .. autofunction:: grids.get_grid_def
 
 .. autofunction:: grids.guess_simple_domain_grid_def

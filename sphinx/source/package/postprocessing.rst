@@ -10,9 +10,6 @@
 
 
 
-Functions
----------
-
 .. autofunction:: postprocessing.process_vertical_interpolation
 
 .. autofunction:: postprocessing.process_zonal_mean
