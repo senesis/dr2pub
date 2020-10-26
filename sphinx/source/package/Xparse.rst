@@ -33,4 +33,4 @@
 
 .. autofunction:: Xparse.id_has_expr_with_at
 
-.. autoclass:: Xparse.Xparse_error
+.. autoclass:: Xparse.XparseError
