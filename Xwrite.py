@@ -318,18 +318,18 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         description = get_variable_from_sset_with_default("description", exp_entry['description'])
         activity_id = get_variable_from_sset_else_lset_with_default('activity_id', default=exp_entry['activity_id'])
         if is_key_in_sset("parent_activity_id"):
-            parent_activity_id = get_variable_from_sset_without_default("parent_acivity_id")
+            parent_activity_id = get_variable_from_sset_without_default("parent_activity_id")
         elif is_key_in_sset("activity_id"):
             parent_activity_id = get_variable_from_sset_without_default("activity_id")
         elif is_key_in_lset("parent_activity_id"):
             parent_activity_id = get_variable_from_lset_without_default("parent_activity_id")
         else:
             parent_activity_id = get_variable_from_sset_with_default("activity_id", exp_entry["parent_activity_id"])
-        if isinstance(parent_activity_id, list) and len(parent_activity_id) > 1:
+        if isinstance(parent_activity_id, list):
             parent_activity_id = reduce(lambda x, y: x+" "+y, parent_activity_id)
         parent_experiment_id = get_variable_from_sset_else_lset_with_default("parent_experiment_id",
                                                                              default=exp_entry['parent_experiment_id'])
-        if isinstance(parent_experiment_id, list) and len(parent_experiment_id) > 1:
+        if isinstance(parent_experiment_id, list):
             parent_experiment_id = reduce(lambda x, y: x+" "+y, parent_experiment_id)
         required_components = exp_entry['required_model_components']  # .split(" ")
         allowed_components = exp_entry['additional_allowed_model_components']  # .split(" ")
@@ -583,9 +583,13 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     wr(xml_file, 'mip_era', mip_era)
     #
     if parent_experiment_id and parent_experiment_id != 'no parent' and parent_experiment_id != ['no parent']:
-        wr(xml_file, 'parent_experiment_id', reduce(lambda x, y: x + " " + y, parent_experiment_id))
+        if isinstance(parent_experiment_id, list):
+            parent_experiment_id = reduce(lambda x, y: x + " " + y, parent_experiment_id)
+        wr(xml_file, 'parent_experiment_id', parent_experiment_id)
         wr(xml_file, 'parent_mip_era', sset, default=mip_era)
-        wr(xml_file, 'parent_activity_id', reduce(lambda x, y: x + " " + y, parent_activity_id))
+        if isinstance(parent_activity_id, list):
+            parent_activity_id = reduce(lambda x, y: x + " " + y, parent_activity_id)
+        wr(xml_file, 'parent_activity_id', parent_activity_id)
         wr(xml_file, 'parent_source_id', sset, default=source_id)
         # TBD : syntaxe XIOS pour designer le time units de la simu courante
         parent_time_ref_year = get_variable_from_sset_with_default('parent_time_ref_year', "1850")
