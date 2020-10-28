@@ -27,3 +27,4 @@ pycallgraph_use.py
 create_file_defs.sh
 tests/htmlcov
 tests/test*/output_*
+/sphinx/build/
