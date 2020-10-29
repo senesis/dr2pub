@@ -66,8 +66,8 @@ Available parameters
             Must be defined jointly with :term:`configuration` if :term:`source_id` and/or :term:`source_types` are not defined
 
 ..    references
-        [:term:`string`, :term:`never required`, :term:`lab_and_model_settings`]
-
+..        [:term:`string`, :term:`never required`, :term:`lab_and_model_settings`]
+..
 ..        Paper or web based document that describes the data or the way to produce them.
 
     info_url
@@ -131,10 +131,10 @@ Available parameters
         A list of tuple (variable, table) to be exlcuded.
 
 ..    included_pairs
-        [:term:`list`, :term:`lab_and_model_settings`]
-
+..        [:term:`list`, :term:`lab_and_model_settings`]
+..
 ..        List of the (variable, table) pairs that must be included in outputs.
-        This has precedence over :term:`excluded_vars` and :term:`excluded_vars_per_config`
+..        This has precedence over :term:`excluded_vars` and :term:`excluded_vars_per_config`
 
     excluded_vars_per_config
         [:term:`dictionary`, :term:`lab_and_model_settings`]
@@ -633,10 +633,10 @@ Available parameters
         next toggle to True
 
 ..    unused_contexts
-        [:term:`list`, :term:`simulation_settings`]
-
+..        [:term:`list`, :term:`simulation_settings`]
+..
 ..        .. todo::
-
+..
 ..           Add a description of the parameter (and check that it is still used).
 
     model_id
@@ -657,8 +657,8 @@ Available parameters
         Parent experiment identifier.
 
 ..    parent_activity
-        [:term:`string`, :term:`simulation_settings`, :term:`required when relevant`]
-
+..        [:term:`string`, :term:`simulation_settings`, :term:`required when relevant`]
+..
 ..        parent activity identifier (corresponds to :term:`parent_activity_id`)
 
     parent_activity_id
