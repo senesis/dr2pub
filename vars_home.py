@@ -157,7 +157,7 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
                                          "out_name", "units", "is_zoom_of", "bounds", "boundsValue", "axis", "type",
                                          "coords", "title", "is_union_for"]:
                             if sdim_key in home_var_sdims_info[home_var.label][home_var_dim]:
-                                setattr(home_var_dim, sdim_key,
+                                setattr(home_var_sdim, sdim_key,
                                         home_var_sdims_info[home_var.label][home_var_dim][sdim_key])
                         home_var_sdims[home_var_dim] = home_var_sdim
                     home_var.sdims = home_var_sdims
@@ -458,6 +458,8 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
         elif hv.type == 'perso':
             # Check if HOME variable anounced as 'perso' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
+            if hv.mipVarLabel is None:
+                hv.mipVarLabel = hv.label
             if not is_cmor:
                 # Check if HOME variable differs from CMOR one only by shapes
                 has_cmor_varname = any([cmvar.label == hv.label for

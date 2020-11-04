@@ -196,10 +196,14 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         if pingvars is not None:
             # Get alias without pressure_suffix but possibly with area_suffix
             alias_ping = ping_alias(sv, pingvars)
+        else:
+            alias_ping = sv.label
     #
     # process only variables in pingvars except for dev variables
-    if alias_ping not in pingvars and sv.type != "dev":
-        # print "+++ =>>>>>>>>>>>", alias_ping, " ", sv.label
+    # print(pingvars)
+    print("+++ =>>>>>>>>>>>", alias_ping, " ", sv.label)
+    print(alias_ping, "in pingvars?", alias_ping in pingvars)
+    if alias_ping not in pingvars and sv.type not in ["dev", ]:
         table = sv.mipTable
         if table not in skipped_vars_per_table:
             skipped_vars_per_table[table] = []
@@ -780,7 +784,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
 
     context_index = get_config_variable("context_index")
 
-    if sv.type == "dev":
+    if sv.type in ["dev", ]:
         alias_ping = alias
         if alias_ping in context_index:
             grid_id_in_ping = id2gridid(alias_ping, context_index)
@@ -800,6 +804,9 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
             field_def = create_xml_element(tag="field", attrib=field_dict)
             field_defs[alias_ping] = field_def
             grid_id_in_ping = context_index[grid_id].attrib["id"]
+    elif sv.type in ["perso", ]:
+        alias_ping = sv.label
+        grid_id_in_ping = id2gridid(alias_ping, context_index)
     else:
         alias_ping = ping_alias(sv, pingvars)
         grid_id_in_ping = id2gridid(alias_ping, context_index)
@@ -838,7 +845,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     #
     if has_singleton(sv):
         last_field_id, last_grid_id = process_singleton(sv, last_field_id, pingvars, field_defs, grid_defs, scalar_defs,
-                                                        table)
+                                                        table, grid_id_in_ping)
     #
     # TBD : handle explicitly the case of scalars (global means, shape na-na) :
     # enforce <scalar name="sector" standard_name="region" label="global" >, or , better,
@@ -1054,7 +1061,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     return rep
 
 
-def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, table):
+def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, table, last_grid_id):
     """
     Based on singleton dimensions of variable SV, and assuming that this/these dimension(s)
     is/are not yet represented by a scalar Xios construct in corresponding field's grid,
@@ -1066,9 +1073,19 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
     printout = False
     # get grid for the variable , before vertical interpo. if any
     # (could rather use last_grid_id and analyze if it has pressure dim)
-    alias_ping = ping_alias(sv, pingvars)
     context_index = get_config_variable("context_index")
-    input_grid_id = id2gridid(alias_ping, context_index)
+    if sv.type in ["dev", ]:
+        alias_ping = sv.label
+        if alias_ping in context_index:
+            input_grid_id = id2gridid(alias_ping, context_index)
+        else:
+            input_grid_id = last_grid_id
+    elif sv.type in ["perso", ]:
+        alias_ping = sv.label
+        input_grid_id = id2gridid(alias_ping, context_index)
+    else:
+        alias_ping = ping_alias(sv, pingvars)
+        input_grid_id = id2gridid(alias_ping, context_index)
     input_grid_def = get_grid_def_with_lset(input_grid_id, grid_defs)
     if printout:
         print("process_singleton : ", "processing %s with grid %s " % (alias, input_grid_id))

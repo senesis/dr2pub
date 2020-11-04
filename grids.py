@@ -43,6 +43,8 @@ def get_grid_def(grid_id, grid_defs):
     Get the grid definition corresponding to grid_id from the context_index or the list of grid definitions.
     """
     context_index = get_config_variable("context_index")
+    print("<<<DEBUG>>> grid_id, grid_id in grid_defs, grid_id in context_index", grid_id, grid_id in grid_defs,
+          grid_id in context_index)
     if grid_id in grid_defs:
         # Simple case : already stored
         grid_def = grid_defs[grid_id]
@@ -226,6 +228,7 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
     else:
         src_grid = get_grid_def_with_lset(src_grid_id, grid_defs)
     target_grid_id = src_grid_id + "_" + domain_id
+    print("<<<DEBUG>>> src_grid_id, domain_id, target_grid_id", src_grid_id, domain_id, target_grid_id)
     # sequence below was too permissive re. assumption that all grid definition use refs rather than ids
     # (target_grid_string,count)=re.subn('domain *id= *.([\w_])*.','%s id="%s" %s'% \
     # (domain_or_axis,domain_id,axis_name), src_grid_string,1)
@@ -233,6 +236,7 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
     target_grid_xml = src_grid.copy()
     is_domain_found = False
     for (rank, grid_child) in enumerate(src_grid):
+        print("<<<DEBUG>>> rank, tag, domain_ref in", rank, grid_child.tag, "domain_ref" in grid_child.attrib)
         if not is_domain_found and grid_child.tag == "domain" and "domain_ref" in grid_child.attrib:
             if turn_into_axis:
                 target_grid_xml[rank].tag = "axis"

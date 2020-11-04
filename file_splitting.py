@@ -25,35 +25,37 @@ splitfreqs = None
 def read_splitfreqs():
     """
     read split_frequencies: first column is variable label, second
-    column is mipTabe; third column is the split_freq
+    column is mipTable; third column is the split_freq
     """
     global splitfreqs
     # No need to reread or try for ever
     if splitfreqs is not None:
         return
-    try:
+    else:
+
         splitfile = get_variable_from_sset_else_lset_with_default(key_sset="split_frequencies",
                                                                   key_lset="split_frequencies",
                                                                   default="splitfreqs.dat")
-        freq = open(splitfile, "r")
-        print("Reading split_freqs from file %s" % splitfile)
-    except:
-        splitfreqs = False
-        return
-    lines = freq.readlines()
-    freq.close()
-    splitfreqs = OrderedDict()
-    for line in lines:
-        if line[0] == '#':
-            continue
-        varlabel = line.split()[0]
-        table = line.split()[1]
-        freq = line.split()[2]
-        if varlabel not in splitfreqs:
-            splitfreqs[varlabel] = OrderedDict()
-        # Keep smallest factor for each variablelabel
-        if table not in splitfreqs[varlabel]:
-            splitfreqs[varlabel][table] = freq
+        try:
+            freq = open(splitfile, "r")
+            print("Reading split_freqs from file %s" % splitfile)
+            lines = freq.readlines()
+            freq.close()
+            splitfreqs = OrderedDict()
+            for line in lines:
+                if line[0] == '#':
+                    continue
+                varlabel = line.split()[0]
+                table = line.split()[1]
+                freq = line.split()[2]
+                if varlabel not in splitfreqs:
+                    splitfreqs[varlabel] = OrderedDict()
+                # Keep smallest factor for each variablelabel
+                if table not in splitfreqs[varlabel]:
+                    splitfreqs[varlabel][table] = freq
+        except:
+            splitfreqs = False
+            return
 
 
 def read_compression_factors():
@@ -105,76 +107,77 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
         read_splitfreqs()
     if splitfreqs and svar.label in splitfreqs and svar.mipTable in splitfreqs[svar.label]:
         return splitfreqs[svar.label][svar.mipTable]
-    #
-    max_size = get_variable_from_lset_with_default("max_file_size_in_floats", 500 * 1.e6)
-    #
-    global compression_factor
-    size = field_size(svar, mcfg) * get_variable_from_lset_with_default("bytes_per_float", 2)
-    if compression_factor is None:
-        read_compression_factors()
-    if compression_factor and svar.label in compression_factor and \
-            svar.mipTable in compression_factor[svar.label]:
-        if printout:
-            print("Dividing size of %s by %g : %g -> %g"
-                  % (svar.label, compression_factor[svar.label][svar.mipTable], size,
-                     (size + 0.) // compression_factor[svar.label][svar.mipTable]))
-        size = (size + 0.) // compression_factor[svar.label][svar.mipTable]
-    # else:
-    #    # Some COSP outputs are highly compressed
-    #    if 'cfad' in svar.label : size/=10.
-    #    if 'clmisr' in svar.label : size/=10.
-
-    if size != 0:
-        freq = svar.frequency
-        sts = get_variable_from_lset_without_default("sampling_timestep", grid, context)
-        # Try by years first
-        size_per_year = size * timesteps_per_freq_and_duration(freq, 365, sts)
-        nbyears = max_size / float(size_per_year)
-        if printout:
-            print("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
-        if nbyears > 1.:
-            if nbyears > 500:
-                return "500y"
-            elif nbyears > 250:
-                return "250y"
-            elif nbyears > 100:
-                return "100y"
-            elif nbyears > 50:
-                return "50y"
-            elif nbyears > 25:
-                return "25y"
-            elif nbyears > 10:
-                return "10y"
-            elif nbyears > 5:
-                return "5y"
-            elif nbyears > 2:
-                return "2y"
-            else:
-                return "1y"
-        else:
-            # Try by month
-            size_per_month = size * timesteps_per_freq_and_duration(freq, 31, sts)
-            nbmonths = max_size / float(size_per_month)
-            if nbmonths > 6.:
-                return "6mo"
-            elif nbmonths > 4.:
-                return "4mo"
-            elif nbmonths > 3.:
-                return "3mo"
-            elif nbmonths > 0.7:
-                return "1mo"
-            else:
-                # Try by day
-                size_per_day = size * timesteps_per_freq_and_duration(freq, 1, sts)
-                nbdays = max_size / float(size_per_day)
-                if nbdays > 1.:
-                    return "1d"
-                else:
-                    raise (Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
-                                             " table %s" % (max_size, freq, svar.label, svar.mipTable)))
     else:
-        raise Dr2xmlGridError(
-            "Warning: field_size returns 0 for var %s, cannot compute split frequency." % svar.label)
+        #
+        max_size = get_variable_from_lset_with_default("max_file_size_in_floats", 500 * 1.e6)
+        #
+        global compression_factor
+        size = field_size(svar, mcfg) * get_variable_from_lset_with_default("bytes_per_float", 2)
+        if compression_factor is None:
+            read_compression_factors()
+        if compression_factor and svar.label in compression_factor and \
+                svar.mipTable in compression_factor[svar.label]:
+            if printout:
+                print("Dividing size of %s by %g : %g -> %g"
+                      % (svar.label, compression_factor[svar.label][svar.mipTable], size,
+                         (size + 0.) // compression_factor[svar.label][svar.mipTable]))
+            size = (size + 0.) // compression_factor[svar.label][svar.mipTable]
+        # else:
+        #    # Some COSP outputs are highly compressed
+        #    if 'cfad' in svar.label : size/=10.
+        #    if 'clmisr' in svar.label : size/=10.
+
+        if size != 0:
+            freq = svar.frequency
+            sts = get_variable_from_lset_without_default("sampling_timestep", grid, context)
+            # Try by years first
+            size_per_year = size * timesteps_per_freq_and_duration(freq, 365, sts)
+            nbyears = max_size / float(size_per_year)
+            if printout:
+                print("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
+            if nbyears > 1.:
+                if nbyears > 500:
+                    return "500y"
+                elif nbyears > 250:
+                    return "250y"
+                elif nbyears > 100:
+                    return "100y"
+                elif nbyears > 50:
+                    return "50y"
+                elif nbyears > 25:
+                    return "25y"
+                elif nbyears > 10:
+                    return "10y"
+                elif nbyears > 5:
+                    return "5y"
+                elif nbyears > 2:
+                    return "2y"
+                else:
+                    return "1y"
+            else:
+                # Try by month
+                size_per_month = size * timesteps_per_freq_and_duration(freq, 31, sts)
+                nbmonths = max_size / float(size_per_month)
+                if nbmonths > 6.:
+                    return "6mo"
+                elif nbmonths > 4.:
+                    return "4mo"
+                elif nbmonths > 3.:
+                    return "3mo"
+                elif nbmonths > 0.7:
+                    return "1mo"
+                else:
+                    # Try by day
+                    size_per_day = size * timesteps_per_freq_and_duration(freq, 1, sts)
+                    nbdays = max_size / float(size_per_day)
+                    if nbdays > 1.:
+                        return "1d"
+                    else:
+                        raise (Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
+                                                 " table %s" % (max_size, freq, svar.label, svar.mipTable)))
+        else:
+            raise Dr2xmlGridError(
+                "Warning: field_size returns 0 for var %s, cannot compute split frequency." % svar.label)
 
 
 def timesteps_per_freq_and_duration(freq, nbdays, sampling_tstep):
