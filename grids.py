@@ -12,6 +12,7 @@ from functools import reduce
 from collections import OrderedDict
 
 import re
+import six
 
 # Utilities
 from utils import Dr2xmlError
@@ -159,7 +160,8 @@ def create_axis_def(sdim, axis_defs, field_defs):
         axis_dict["standard_name"] = sdim.stdname
         axis_dict["long_name"] = sdim.long_name
         axis_dict["unit"] = sdim.units
-        axis_dict["axis_type"] = sdim.axis
+        if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
+            axis_dict["axis_type"] = sdim.axis
         axis_xml = create_xml_element(tag="axis", attrib=axis_dict)
         # Define some other values
         if sdim.stdname == "air_pressure":
@@ -201,7 +203,8 @@ def create_axis_def(sdim, axis_defs, field_defs):
         axis_dict["id"] = sdim.zoom_label
         axis_dict["axis_ref"] = sdim.zoom_of
         axis_dict["name"] = "plev"
-        axis_dict["axis_type"] = sdim.axis
+        if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
+            axis_dict["axis_type"] = sdim.axis
         axis_xml = create_xml_element(tag="axis", attrib=axis_dict)
         values = re.sub(r'.*\[ *(.*) *\].*', r'\1', axis_defs[sdim.is_zoom_of].attrib["value"])
         values = values.split("\n")[0]
@@ -420,7 +423,8 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
             strings += "%s " % s
         if length > 0:
             rep_dict["label"] = "(0,{})[ {} ]".format(length - 1, strings)
-    rep_dict["axis_type"] = dim.axis
+    if isinstance(dim.axis, six.string_types) and len(dim.axis) > 0:
+        rep_dict["axis_type"] = dim.axis
     rep = create_xml_element(tag="axis", attrib=rep_dict)
     axis_defs[axis_id] = rep
     # print "new DR_axis :  %s "%rep

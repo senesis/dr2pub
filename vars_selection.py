@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from collections import OrderedDict, namedtuple
 
 # Utilities
-from utils import dr2xml_error, print_struct
+from utils import Dr2xmlError, print_struct
 
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_sset_else_lset_without_default, get_variable_from_lset_with_default, \
@@ -24,8 +24,8 @@ from dr_interface import get_request_by_id_by_sect, get_uid, get_experiment_labe
 from grids_selection import decide_for_grids
 
 # Variables tools
-from vars_home import complement_svar_using_cmorvar, process_homeVars
-from vars_cmor import analyze_priority, simple_CMORvar
+from vars_home import complement_svar_using_cmorvar, process_home_vars
+from vars_cmor import analyze_priority, SimpleCMORVar
 
 
 print_multiple_grids = False
@@ -341,9 +341,9 @@ def year_in_ri_tslice(ri, exp, year, debug=False):
                         print("slice OK : year=%d, start=%d tslice.start=%d refyear=%d tslice.nyears=%d lastyear=%d" %
                               (year, start, tslice.start, refyear, tslice.nyears, lastyear))
         else:
-            raise dr2xml_error("For tslice %s, child %s start year is not documented" % (tslice.title, tslice.child))
+            raise Dr2xmlError("For tslice %s, child %s start year is not documented" % (tslice.title, tslice.child))
     else:
-        raise dr2xml_error("type %s for time slice %s is not handled" % (tslice.type, tslice.title))
+        raise Dr2xmlError("type %s for time slice %s is not handled" % (tslice.type, tslice.title))
     if debug:
         print("for year %d and experiment %s, relevant is %s for tslice %s of type %s, endyear=%s" %
               (year, exp.label, repr(relevant), ri.title, tslice.type, repr(endyear)))
@@ -380,7 +380,7 @@ def experiment_start_year(exp, debug=False):
             form = "Cannot guess first year for experiment %s : DR says :'%s' "
             if is_sset_not_None():
                 form += "and 'branch_year_in_child' is not provided in experiment's settings"
-            raise dr2xml_error(form % (exp.label, exp.starty))
+            raise Dr2xmlError(form % (exp.label, exp.starty))
 
 
 def experiment_end_year(exp):
@@ -628,7 +628,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     simplified_vars = []
     allow_pseudo = get_variable_from_lset_with_default('allow_pseudo_standard_names', False)
     for v in d:
-        svar = simple_CMORvar()
+        svar = SimpleCMORVar()
         cmvar = get_uid(v)
         sn_issues = complement_svar_using_cmorvar(svar, cmvar, sn_issues, [], allow_pseudo)
         svar.Priority = analyze_priority(cmvar, mips_list)
@@ -662,12 +662,12 @@ def gather_AllSimpleVars(year=False, printout=False, select="on_expt_and_year"):
     elif select == "no":
         mip_vars_list = select_CMORvars_for_lab(False, None, printout=printout)
     else:
-        raise dr2xml_error("Choice %s is not allowed for arg 'select'" % select)
+        raise Dr2xmlError("Choice %s is not allowed for arg 'select'" % select)
     #
     if get_variable_from_sset_else_lset_with_default('listof_home_vars', 'listof_home_vars', None):
         exp = get_variable_from_sset_with_default_in_sset('experiment_for_requests', 'experiment_id')
-        process_homeVars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
-                         expid=exp, printout=printout)
+        process_home_vars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
+                          expid=exp, printout=printout)
     else:
         print("Info: No HOMEvars list provided.")
     return mip_vars_list
