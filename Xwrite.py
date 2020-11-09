@@ -202,8 +202,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     #
     # process only variables in pingvars except for dev variables
     # print(pingvars)
-    print("+++ =>>>>>>>>>>>", alias_ping, " ", sv.label)
-    print(alias_ping, "in pingvars?", alias_ping in pingvars)
+    # print("+++ =>>>>>>>>>>>", alias_ping, " ", sv.label)
+    # print(alias_ping, "in pingvars?", alias_ping in pingvars)
     if alias_ping not in pingvars and sv.type not in ["dev", ]:
         table = sv.mipTable
         if table not in skipped_vars_per_table:
