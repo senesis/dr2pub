@@ -532,8 +532,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         external_variables += " " + re.sub(".*area: ([^ ]*).*", r'\1', sv.cell_measures)
     if "volume:" in sv.cell_measures:
         external_variables += " " + re.sub(".*volume: ([^ ]*).*", r'\1', sv.cell_measures)
-    if 'fx' in table:
-        external_variables = ""
+    # if 'fx' in table:
+    #     external_variables = ""
     if external_variables:
         wr(xml_file, 'external_variables', external_variables)
     #
