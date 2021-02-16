@@ -456,7 +456,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
     mips_list.sort()
     #
     if rls_for_all_experiments is None:
-        rls_for_mips = sorted(list(sc.getRequestLinkByMip(set(mips_list)))) # Because scope do not accept list types
+        rls_for_mips = sorted(list(sc.getRequestLinkByMip(set(mips_list))), key=lambda x: x.label) # Because scope do not accept list types
         if printout:
             print("Number of Request Links which apply to MIPS", print_struct(mips_list), " is: ", len(rls_for_mips))
         #
@@ -482,7 +482,7 @@ def select_CMORvars_for_lab(sset=False, year=None, printout=False):
             print("Number of Request Links after filtering by included_request_links is: ", len(rls_for_mips))
         rls_for_all_experiments = [rl for rl in rls_for_mips]
     else:
-        rls_for_mips = sorted(rls_for_all_experiments)
+        rls_for_mips = sorted(rls_for_all_experiments, key=lambda x: x.label)
     #
     if sset:
         experiment_id = get_variable_from_sset_with_default_in_sset('experiment_for_requests', 'experiment_id')

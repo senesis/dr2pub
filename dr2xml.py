@@ -63,7 +63,7 @@ from collections import OrderedDict
 from utils import print_struct
 
 # Global variables and configuration tools
-from config import get_config_variable, set_config_variable, python_version
+from config import get_config_variable, set_config_variable, python_version, initialize_config_variables
 
 # Interface to settings dictionaries
 from settings_interface import initialize_dict, get_variable_from_lset_with_default, \
@@ -600,6 +600,7 @@ def generate_file_defs(lset, sset, year, enddate, context, cvs_path, pingfiles=N
     # pr = cProfile.Profile()
     # pr.enable()
     # Initialize lset and sset variables for all functions
+    initialize_config_variables()
     initialize_dict(lset, sset)
     generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingfiles=pingfiles,
                              dummies=dummies, printout=printout, dirname=dirname,

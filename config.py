@@ -11,10 +11,11 @@ import sys
 
 # Utilities
 from utils import Dr2xmlError
+import copy
 
 
 # Python version
-python_version = "python"+sys.version[0]
+python_version = "python" + sys.version[0]
 
 # General variables
 version = "2.2"  # dr2xml version
@@ -31,18 +32,27 @@ context_index = None
 # Variable used to store cell method warnings
 cell_method_warnings = list()
 
+# Variable used to store compression factor
+compression_factor = None
+
+# Variable used to store split_frequencies
+splitfreqs = None
+
 
 # Functions to deal with those configuration variables
+def initialize_config_variables():
+    set_config_variable("context_index", None)
+    set_config_variable("cell_method_warnings", list())
+    set_config_variable("compression_factor", None)
+    set_config_variable("splitfreqs", None)
+
+
 def set_config_variable(variable, value):
     """
     Set the value of the indicated global variable
     """
-    if variable == "context_index":
-        global context_index
-        context_index = value
-    elif variable == "cell_method_warnings":
-        global cell_method_warnings
-        cell_method_warnings = value
+    if variable in globals():
+        globals()[variable] = copy.deepcopy(value)
     else:
         raise Dr2xmlError("Can not set configuration variable %s." % variable)
 
@@ -51,16 +61,8 @@ def get_config_variable(variable):
     """
     Get the value of the indicated global variable.
     """
-    if variable == "context_index":
-        return context_index
-    elif variable == "conventions":
-        return conventions
-    elif variable == "version":
-        return version
-    elif variable == "CMIP6_conventions_version":
-        return CMIP6_conventions_version
-    elif variable == "cell_method_warnings":
-        return cell_method_warnings
+    if variable in globals():
+        return copy.deepcopy(globals()[variable])
     else:
         raise Dr2xmlError("Unknown configuration variable %s." % variable)
 
@@ -69,7 +71,7 @@ def add_value_in_list_config_variable(variable, value):
     """
     Add a value to a list-type configuration variable.
     """
-    if variable == "cell_method_warnings":
+    if variable in ["cell_method_warnings", ]:
         global cell_method_warnings
         cell_method_warnings.append(value)
     else:

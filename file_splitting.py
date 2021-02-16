@@ -14,25 +14,21 @@ from io import open
 from utils import Dr2xmlGridError
 
 # Interface to settings dictionaries
-from settings_interface import get_variable_from_lset_with_default, get_variable_from_lset_without_default,\
+from settings_interface import get_variable_from_lset_with_default, get_variable_from_lset_without_default, \
     get_variable_from_sset_else_lset_with_default
-
-
-compression_factor = None
-splitfreqs = None
+from config import get_config_variable, set_config_variable
 
 
 def read_splitfreqs():
     """
-    read split_frequencies: first column is variable label, second
+    Read split_frequencies: first column is variable label, second
     column is mipTable; third column is the split_freq
     """
-    global splitfreqs
+    splitfreqs = get_config_variable("splitfreqs")
     # No need to reread or try for ever
     if splitfreqs is not None:
         return
     else:
-
         splitfile = get_variable_from_sset_else_lset_with_default(key_sset="split_frequencies",
                                                                   key_lset="split_frequencies",
                                                                   default="splitfreqs.dat")
@@ -43,18 +39,17 @@ def read_splitfreqs():
             freq.close()
             splitfreqs = OrderedDict()
             for line in lines:
-                if line[0] == '#':
-                    continue
-                varlabel = line.split()[0]
-                table = line.split()[1]
-                freq = line.split()[2]
-                if varlabel not in splitfreqs:
-                    splitfreqs[varlabel] = OrderedDict()
-                # Keep smallest factor for each variablelabel
-                if table not in splitfreqs[varlabel]:
-                    splitfreqs[varlabel][table] = freq
+                if not line.startswith('#'):
+                    (varlabel, table, freq) = line.split()[0:3]
+                    if varlabel not in splitfreqs:
+                        splitfreqs[varlabel] = OrderedDict()
+                    # Keep smallest factor for each variable label
+                    if table not in splitfreqs[varlabel]:
+                        splitfreqs[varlabel][table] = freq
+            set_config_variable("splitfreqs", splitfreqs)
         except:
             splitfreqs = False
+            set_config_variable("splitfreqs", splitfreqs)
             return
 
 
@@ -67,29 +62,32 @@ def read_compression_factors():
     the same compression_level setting
     This factor is applied above the bytes_per_float setting
     """
-    global compression_factor
+    compression_factor = get_config_variable("compression_factor")
     # No need to reread or try for ever
     if compression_factor is not None:
         return
-    try:
-        fact = open("compression_factors.dat", "r")
-    except:
-        compression_factor = False
-        return
-    lines = fact.readlines()
-    compression_factor = OrderedDict()
-    for line in lines:
-        if line[0] == '#':
-            continue
-        varlabel = line.split()[0]
-        table = line.split()[1]
-        factor = float(line.split()[2])
-        if varlabel not in compression_factor:
-            compression_factor[varlabel] = OrderedDict()
-        # Keep smallest factor for each variablelabel
-        if table not in compression_factor[varlabel] or \
-                compression_factor[varlabel][table] > factor:
-            compression_factor[varlabel][table] = factor
+    else:
+        try:
+            fact = open("compression_factors.dat", "r")
+            lines = fact.readlines()
+            compression_factor = OrderedDict()
+            for line in lines:
+                if line[0] == '#':
+                    continue
+                varlabel = line.split()[0]
+                table = line.split()[1]
+                factor = float(line.split()[2])
+                if varlabel not in compression_factor:
+                    compression_factor[varlabel] = OrderedDict()
+                # Keep smallest factor for each variablelabel
+                if table not in compression_factor[varlabel] or \
+                        compression_factor[varlabel][table] > factor:
+                    compression_factor[varlabel][table] = factor
+            set_config_variable("compression_factor", compression_factor)
+        except:
+            compression_factor = False
+            set_config_variable("compression_factor", compression_factor)
+            return
 
 
 def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
@@ -102,19 +100,21 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
     with a default value
 
     """
-    global splitfreqs
+    splitfreqs = get_config_variable("splitfreqs")
     if splitfreqs is None:
         read_splitfreqs()
+        splitfreqs = get_config_variable("splitfreqs")
     if splitfreqs and svar.label in splitfreqs and svar.mipTable in splitfreqs[svar.label]:
         return splitfreqs[svar.label][svar.mipTable]
     else:
         #
         max_size = get_variable_from_lset_with_default("max_file_size_in_floats", 500 * 1.e6)
         #
-        global compression_factor
+        compression_factor = get_config_variable("compression_factor")
         size = field_size(svar, mcfg) * get_variable_from_lset_with_default("bytes_per_float", 2)
         if compression_factor is None:
             read_compression_factors()
+            compression_factor = get_config_variable("compression_factor")
         if compression_factor and svar.label in compression_factor and \
                 svar.mipTable in compression_factor[svar.label]:
             if printout:

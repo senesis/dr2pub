@@ -15,6 +15,7 @@ import os
 import json
 import re
 from io import open
+import six
 
 # DR interface
 from dr_interface import get_collection, get_uid, get_cmor_var_id_by_label, print_DR_stdname_errors, print_DR_errors
@@ -80,43 +81,43 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
     home_attrs = ['type', 'label', 'modeling_realm', 'frequency', 'mipTable', 'temporal_shp', 'spatial_shp',
                   'experiment', 'mip']
     dev_home_attrs = ['units', 'long_name', 'stdname']
-    data = []
-    file_list = hmv_file.replace('  ', ' ').split(' ')
+    data = list()
+    file_list = [f for f in hmv_file.split(" ") if len(f) > 0]
     for fil in file_list:
-        if fil.strip() == '':
-            continue
         if not os.path.exists(fil):
             raise VarsError("Abort: file for home variables does not exist: %s" % fil)
-        # Read file
-        with open(fil, "r") as fp:
-            data.extend(fp.readlines())
+        else:
+            # Read file
+            with open(fil, "r") as fp:
+                data.extend(fp.readlines())
     # Build list of home variables
-    homevars = []
-    extravars = []
+    homevars = list()
+    extravars = list()
     extra_vars_per_table = OrderedDict()
-    for line in [l for l in data if len(l) > 0 and not l.startswith("#")]:
+    data = [l.rstrip("\n\t ") for l in data if not l.startswith("#")]
+    for line in [l for l in data if len(l) > 0]:
         line_split = line.split(';')
         # get the Table full name
         table = line_split[4].strip(' ')
         # overwrite  5th column with table name without prefix
-        if table != 'NONE':
+        if table not in ['NONE', ]:
             if '_' not in table:
                 sys.exit("Abort: a prefix is expected in extra Table name: " + table)
             line_split[4] = table.split('_')[1]
         hmv_type = line_split[0].strip(' ')
         # Build the list of attributes
         # If extra, the table can be added as a whole or by variable
-        extra_tables = []
+        extra_tables = list()
         # if hmv_type!='extra':
         home_var = SimpleCMORVar()
         # Build the line that will contain all useful elements
-        line_to_treat = []
+        line_to_treat = list()
         for col in line_split:
             ccol = col.lstrip(' ').rstrip('\n\t ')
-            if ccol != '':
+            if len(ccol) > 0:
                 line_to_treat.append(ccol)
         # Get the last columns in case of dev variable
-        if hmv_type == "dev":
+        if hmv_type in ["dev", ]:
             for (key, value) in zip(home_attrs+dev_home_attrs, line_to_treat):
                 setattr(home_var, key, value)
             # Add the grids description (grid_id and grid_ref)
@@ -130,23 +131,23 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
             for (key, value) in zip(home_attrs, line_to_treat):
                 setattr(home_var, key, value)
 
-        if hmv_type != 'extra':
+        if hmv_type not in ['extra', ]:
             home_var.label_with_area = home_var.label
-            if hmv_type == 'perso':
+            if hmv_type in ['perso', ]:
                 home_var.mip_era = 'PERSO'
                 home_var.cell_methods = tcmName2tcmValue[home_var.temporal_shp]
                 home_var.label_without_psuffix = home_var.label
                 home_var.cell_measures = ""
-            elif hmv_type == "dev":
+            elif hmv_type in ["dev", ]:
                 home_var.mip_era = 'DEV'
                 home_var.mipVarLabel = home_var.label
-                if home_var.frequency == "fx":
+                if home_var.frequency in ["fx", ]:
                     home_var.cell_methods = None
                 else:
                     home_var.cell_methods = tcmName2tcmValue[home_var.temporal_shp]
                 home_var.label_without_psuffix = home_var.label
                 home_var.cell_measures = ""
-            if home_var.spatial_shp == "XY-perso":
+            if home_var.spatial_shp in ["XY-perso", ]:
                 home_var_sdims_info = get_variable_from_sset_with_default('perso_sdims_description', OrderedDict())
                 if home_var.label in home_var_sdims_info:
                     home_var_sdims = OrderedDict()
@@ -172,7 +173,7 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
                 home_var.mip = new_mip
             if (isinstance(home_var.mip, string_types) and (home_var.mip == "ANY" or home_var.mip in mips)) or \
                     (isinstance(home_var.mip, list) and mips.issuperset(home_var.mip)):
-                if home_var.experiment != "ANY":
+                if home_var.experiment not in ["ANY", ]:
                     # if home_var.experiment==expid: homevars.append(home_var)
                     if expid in home_var.experiment:
                         homevars.append(home_var)
@@ -181,9 +182,9 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
         else:
             if table not in extra_vars_per_table:
                 extra_vars_per_table[table] = read_extra_table(path_extra_tables, table, printout=printout)
-            if home_var.label == "ANY":
-                if home_var.mip == "ANY" or home_var.mip in mips:
-                    if home_var.experiment != "ANY":
+            if home_var.label in ["ANY", ]:
+                if home_var.mip in ["ANY", ] or home_var.mip in mips:
+                    if home_var.experiment not in ["ANY", ]:
                         if expid in home_var.experiment:
                             extravars.extend(extra_vars_per_table[table])
                     else:
@@ -198,8 +199,8 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
                 if var_found is None:
                     print("Warning: 'extra' variable %s not found in table %s" % (home_var.label, table))
                 else:
-                    if home_var.mip == "ANY" or home_var.mip in mips:
-                        if home_var.experiment != "ANY":
+                    if home_var.mip in ["ANY", ] or home_var.mip in mips:
+                        if home_var.experiment not in ["ANY", ]:
                             if expid in home_var.experiment:
                                 extravars.append(var_found)
                         else:
@@ -262,8 +263,9 @@ def read_extra_table(path, table, printout=False):
     if not dr_single_levels:
         for struct in get_collection('structure').items:
             spshp = get_uid(struct.spid)
-            if spshp.label == "XY-na" and 'cids' in struct.__dict__:
-                if struct.cids[0] != '':  # this line is needed prior to version 01.00.08.
+            if spshp.label in ["XY-na", ] and 'cids' in struct.__dict__:
+                if isinstance(struct.cids[0], six.string_types) and len(struct.cids[0]) > 0:
+                    # this line is needed prior to version 01.00.08.
                     c = get_uid(struct.cids[0])
                     # if c.axis == 'Z': # mpmoine_note: non car je veux dans dr_single_levels toutes les dimensions
                     # singletons (ex. 'typenatgr'), par seulement les niveaux
@@ -273,7 +275,7 @@ def read_extra_table(path, table, printout=False):
         other_single_levels = ['height50m', 'p100']
         dr_single_levels.extend(other_single_levels)
     #
-    extravars = []
+    extravars = list()
     dr_slevs = dr_single_levels
     mip_era = table.split('_')[0]
     json_table = path + "/" + table + ".json"
@@ -311,8 +313,8 @@ def read_extra_table(path, table, printout=False):
             # into DR spatial-only dimensions (e.g. "longitude|latitude")
             dims = (v["dimensions"]).split(" ")
             # get the index of time dimension to supress, if any
-            inddims_to_sup = []
-            ind_time = []
+            inddims_to_sup = list()
+            ind_time = list()
             dsingle = None
             for d in dims:
                 if "time" in d:
@@ -337,7 +339,7 @@ def read_extra_table(path, table, printout=False):
                     drdims = d
             if drdims in dims2shape:
                 extra_var.spatial_shp = dims2shape[drdims]
-            elif drdims[0:19] == 'longitude|latitude|':
+            elif drdims[0:19] in ['longitude|latitude|', ]:
                 # Allow the user to put any additional vertical dimension name
                 # which syntax fits further tests, such as P8MINE
                 edim = drdims[19:]
@@ -354,7 +356,7 @@ def read_extra_table(path, table, printout=False):
                 # mpmoine_note: on a "latitude|longitude" au lieu de "longitude|latitude"
                 print("Warning: spatial shape corresponding to ", drdims, "for variable", v["out_name"], "in Table",
                       table, " not found in DR.")
-            dr_dimids = []
+            dr_dimids = list()
             for d in all_dr_dims:
                 if d in dim2dimid:
                     dr_dimids.append(dim2dimid[d])
@@ -376,9 +378,7 @@ def read_extra_table(path, table, printout=False):
                             extra_sdim.title = cdata["axis_entry"][d]["title"]
                         else:
                             extra_sdim.title = cdata["axis_entry"][d]["long_name"]
-                        string_of_requested = ""
-                        for ilev in cdata["axis_entry"][d]["requested"]:
-                            string_of_requested = string_of_requested + " " + ilev
+                        string_of_requested = " ".join([ilev for ilev in cdata["axis_entry"][d]["requested"]])
                         extra_sdim.requested = string_of_requested.rstrip(" ")  # values of multi vertical levels
                         extra_sdim.value = cdata["axis_entry"][d]["value"]  # value of single vertical level
                         extra_sdim.type = cdata["axis_entry"][d]["type"]  # axis type
@@ -419,12 +419,12 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
     path_extra_tables = get_variable_from_sset_else_lset_with_default('path_extra_tables', default=None)
     home_vars_list = read_home_vars_list(homevars, expid, mips, path_extra_tables, printout=printout)
     for hv in home_vars_list:
-        printmore = False and (hv.label == 'lwsnl')
+        printmore = False and (hv.label in ['lwsnl', ])
         hv_info = {"varname": hv.label, "realm": hv.modeling_realm,
                    "freq": hv.frequency, "table": hv.mipTable}
         if printmore:
             print(hv_info)
-        if hv.type == 'cmor':
+        if hv.type in ['cmor', ]:
             # Complement each HOME variable with attributes got from
             # the corresponding CMOR variable (if exist)
             updated_hv = get_corresp_cmor_var(hv)
@@ -455,7 +455,7 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
                                              "=> Not taken into account.")
                     raise VarsError("Abort: HOMEVar %s is declared as cmor but no corresponding CMORVar found."
                                     % repr(hv_info))
-        elif hv.type == 'perso':
+        elif hv.type in ['perso', ]:
             # Check if HOME variable anounced as 'perso' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
             if hv.mipVarLabel is None:
@@ -480,7 +480,7 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
                     print("Error:", hv_info,
                           "HOMEVar is anounced as perso, but in reality is cmor => Not taken into account.")
                 raise VarsError("Abort: HOMEVar is anounced as perso but should be cmor.")
-        elif hv.type == 'dev':
+        elif hv.type in ['dev', ]:
             # Check if HOME variable anounced as 'dev' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
             if not is_cmor:
@@ -521,7 +521,7 @@ def get_corresp_cmor_var(hmvar):
     """
     printout = False and ("lwsnl" in hmvar.label)
     count = 0
-    empty_table = (hmvar.mipTable == 'NONE') or (hmvar.mipTable[0:4] == 'None')
+    empty_table = (hmvar.mipTable in ['NONE', ]) or (hmvar.mipTable.startswith("None"))
     for cmvarid in get_cmor_var_id_by_label(hmvar.label):
         cmvar = get_uid(cmvarid)
         if printout:
@@ -657,28 +657,28 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
 
         # A number of DR values indicate a choice or a directive for attribute cell_measures (--OPT, --MODEL ...)
         # See interpretation guidelines at https://www.earthsystemcog.org/projects/wip/drq_interp_cell_center
-        if svar.cell_measures == '--MODEL':
+        if svar.cell_measures in ['--MODEL', ]:
             svar.cell_measures = ''
-        elif svar.cell_measures == '--OPT':
+        elif svar.cell_measures in ['--OPT', ]:
             svar.cell_measures = ''
 
         # TBD Next sequences are adhoc for errors DR 01.00.21
         if svar.label in ['tauuo', 'tauvo']:
             svar.cell_measures = 'area: areacello'
-        elif svar.cell_measures == 'area: areacella' and \
+        elif svar.cell_measures in ['area: areacella', ] and \
                 svar.label in ['tos', 't20d', 'thetaot700', 'thetaot2000', 'thetaot300', 'mlotst']:
             svar.cell_measures = 'area: areacello'
 
         # TBD : this cell_measure choice for seaice variables is specific to Nemo
         if "seaIce" in svar.modeling_realm and "areacella" in svar.cell_measures:
-            if svar.label == 'siconca':
+            if svar.label in ['siconca', ]:
                 svar.cell_measures = 'area: areacella'
             else:
                 svar.cell_measures = 'area: areacello'
         #
         product_of_other_dims = 1
-        all_dimids = []
-        if svar.spatial_shp != "na-na":
+        all_dimids = list()
+        if svar.spatial_shp not in ["na-na", ]:
             spid = get_uid(svar.struct.spid)
             all_dimids += spid.dimids
         if 'cids' in svar.struct.__dict__:
