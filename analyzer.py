@@ -20,6 +20,9 @@ import sys
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Global variables and configuration tools
 from config import add_value_in_list_config_variable
 
@@ -131,7 +134,7 @@ def freq2datefmt(in_freq, operation, table):
     return datefmt, offset, offset_end
 
 
-def analyze_cell_time_method(cm, label, table, printout=False):
+def analyze_cell_time_method(cm, label, table):
     """
     Depending on cell method string CM, tells / returns
     - which time operation should be done
@@ -142,6 +145,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
     "where sea-ice", "where cloud" since we suppose fields required in this way
     are physically undefined oustide of "where something".
     """
+    logger = get_logger()
     operation = None
     detect_missing = False
     clim = False
@@ -152,7 +156,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
             operation = "once"
         else:
             if print_DR_errors:
-                print("DR Error: cell_time_method is None for %15s in table %s, averaging" % (label, table))
+                logger.error("DR Error: cell_time_method is None for %15s in table %s, averaging" % (label, table))
             operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
     elif "time: mean (with samples weighted by snow mass)" in cm:
@@ -160,8 +164,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('Cannot yet handle time: mean (with samples weighted by snow mass)',
                                            label, table))
-        if printout:
-            print("Will not explicitly handle time: mean (with samples weighted by snow mass) for "
+        logger.info("Will not explicitly handle time: mean (with samples weighted by snow mass) for "
                   "%15s in table %s -> averaging" % (label, table))
         operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
@@ -170,10 +173,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # albisccp et pctisccp, en emDay et emMon)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('Will not explicitly handle time: mean where cloud', label, table))
-        if printout:
-            print("Note : assuming that  "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # -------------------------------------------------------------------------------------
@@ -182,10 +182,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables en SImon)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where sea_ice_melt_pound', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where sea_ice_melt_pound' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where sea_ice_melt_pound' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # -------------------------------------------------------------------------------------------------
@@ -194,29 +192,25 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables en SImon, sauf sispeed et sithick en SIday)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where sea_ice', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where sea_ice' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where sea_ice' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     elif "time: mean where sea" in cm:  # [amnesi-tmn]:
         # Area Mean of Ext. Prop. on Sea Ice : pas utilisee
-        print("time: mean where sea is not supposed to be used (%s,%s)" % (label, table))
+        logger.warning("time: mean where sea is not supposed to be used (%s,%s)" % (label, table))
     # -------------------------------------------------------------------------------------
     elif "time: mean where sea" in cm:  # [amnesi-tmn]:
         # Area Mean of Ext. Prop. on Sea Ice : pas utilisee
-        print("time: mean where sea is not supposed to be used (%s,%s)" % (label, table))
+        logger.warning("time: mean where sea is not supposed to be used (%s,%s)" % (label, table))
     # -------------------------------------------------------------------------------------
     elif "time: mean where floating_ice_shelf" in cm:
         # [amnfi-twmn]: Weighted Time Mean on Floating Ice Shelf (presque que des
         # variables en Imon, Iyr, sauf sftflt en LImon !?)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where floating_ice_shelf', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where floating_ice_shelf' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where floating_ice_shelf' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -225,10 +219,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables en Imon, Iyr)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where grounded_ice_sheet', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where grounded_ice_sheet' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where grounded_ice_sheet' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -237,10 +229,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables en Imon, Iyr)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where ice_sheet', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where ice_sheet' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where ice_sheet' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -249,10 +239,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables suffixees en 'Lut')
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where land_use', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where landuse' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where landuse' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -261,10 +249,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables suffixees en 'Crop')
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where crops', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where crops' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where crops' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -273,10 +259,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables suffixees en 'Grass')
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where natural_grasses', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where natural_grasses' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where natural_grasses' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -285,10 +269,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables suffixees en 'Shrub')
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where shrubs', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where shrubs' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where shrubs' " 
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -297,10 +279,8 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # variables suffixees en 'Tree')
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where trees', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where trees' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where trees' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
@@ -308,26 +288,24 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         # [amv-twm]: Weighted Time Mean on Vegetation (pas de variables concernees)
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('time: mean where vegetation', label, table))
-        if printout:
-            print("Note : assuming that 'time: mean where vegetation' "
-                  " for %15s in table %s is well handled by 'detect_missing'"
-                  % (label, table))
+        logger.info("Note : assuming that 'time: mean where vegetation' "
+                    " for %15s in table %s is well handled by 'detect_missing'" % (label, table))
         operation = "average"
         detect_missing = True
     # ----------------------------------------------------------------------------------------------------------------
     elif "time: maximum within days time: mean over days" in cm:
         # [dmax]: Daily Maximum : tasmax Amon seulement
         if label != 'tasmax' and label != 'sfcWindmax':
-            print("Error: issue with variable %s in table %s "
-                  "and cell method time: maximum within days time: mean over days" % (label, table))
+            logger.error("Error: issue with variable %s in table %s "
+                         "and cell method time: maximum within days time: mean over days" % (label, table))
         # we assume that pingfile provides a reference field which already implements "max within days"
         operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
     elif "time: minimum within days time: mean over days" in cm:
         # [dmin]: Daily Minimum : tasmin Amon seulement
         if label != 'tasmin':
-            print("Error: issue with variable %s in table %s  "
-                  "and cell method time: minimum within days time: mean over days" % (label, table))
+            logger.error("Error: issue with variable %s in table %s  "
+                         "and cell method time: minimum within days time: mean over days" % (label, table))
         # we assume that pingfile provides a reference field which already implements "min within days"
         operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
@@ -336,9 +314,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('Cannot yet compute annual climatology - must do it as a postpro',
                                            label, table))
-        if printout:
-            print("Cannot yet compute annual climatology for "
-                  "%15s in table %s -> averaging" % (label, table))
+        logger.info("Cannot yet compute annual climatology for %15s in table %s -> averaging" % (label, table))
         # Could transform in monthly fields to be post-processed
         operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
@@ -353,9 +329,7 @@ def analyze_cell_time_method(cm, label, table, printout=False):
     elif "time: mean within hours time: maximum over hours" in cm:
         add_value_in_list_config_variable("cell_method_warnings",
                                           ('Cannot yet compute maximum hourly rate', label, table))
-        if printout:
-            print("TBD: Cannot yet compute maximum hourly rate for "
-                  " %15s in table %s -> averaging" % (label, table))
+        logger.info("TBD: Cannot yet compute maximum hourly rate for %15s in table %s -> averaging" % (label, table))
             # Could output a time average of 24 hourly fields at 01 UTC, 2UTC ...
         operation = "average"
     # ----------------------------------------------------------------------------------------------------------------
@@ -381,19 +355,20 @@ def analyze_cell_time_method(cm, label, table, printout=False):
         operation = "once"
     # ----------------------------------------------------------------------------------------------------------------
     else:
-        print("Warning: issue when analyzing cell_time_method "
-              "%s for %15s in table %s, assuming it is once" % (cm, label, table))
+        logger.warning("Warning: issue when analyzing cell_time_method "
+                       "%s for %15s in table %s, assuming it is once" % (cm, label, table))
         operation = "once"
 
     if not operation:
         # raise dr2xml_error("Fatal: bad xios 'operation' for %s in table %s: %s (%s)"
         #                    %(sv.label,table,operation,sv.cell_methods))
-        print("Fatal: bad xios 'operation' for %s in table %s: %s (%s)" % (label, table, operation, cm))
+        logger.critical("Fatal: bad xios 'operation' for %s in table %s: %s (%s)" % (label, table, operation, cm))
         operation = "once"
     if not isinstance(detect_missing, bool):
         # raise dr2xml_error("Fatal: bad xios 'detect_missing_value' for %s in table %s: %s (%s)"
         #                    %(sv.label,table,detect_missing,sv.cell_methods))
-        print("Fatal: bad xios 'detect_missing_value' for %s in table %s: %s (%s)" % (label, table, detect_missing, cm))
+        logger.critical("Fatal: bad xios 'detect_missing_value' for %s in table %s: %s (%s)" %
+                        (label, table, detect_missing, cm))
 
     return operation, detect_missing, clim
 
@@ -405,11 +380,12 @@ def cmip6_freq_to_xios_freq(freq, table):
     :param table:
     :return:
     """
+    logger = get_logger()
     if freq in ["subhr", "subhrPt"]:
         if table == "CFsubhr":
             rep = get_variable_from_lset_with_default("CFsubhr_frequency", "1ts")
         elif table is None:
-            print("Issue in dr2xml with table None and freq=", freq)
+            logger.error("Issue in dr2xml with table None and freq=", freq)
             sys.exit(0)
         else:
             rep = "1ts"
@@ -451,6 +427,7 @@ def guess_freq_from_table_name(table):
 
     Used for cases where the table is not a CMIP6 one
     """
+    logger = get_logger()
     if "subhr" in table:
         return "subhr"
     elif "1hr" in table:
@@ -474,7 +451,7 @@ def guess_freq_from_table_name(table):
     elif "fx" in table:
         return "fx"
     else:
-        print("ERROR in guess_freq_from_table : cannot deduce frequency from table named %s" % table)
+        logger.error("ERROR in guess_freq_from_table : cannot deduce frequency from table named %s" % table)
         sys.exit(1)
 
 

@@ -13,6 +13,9 @@ from io import open
 # Utilities
 from utils import Dr2xmlGridError
 
+# Logger
+from logger import get_logger
+
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_lset_with_default, get_variable_from_lset_without_default, \
     get_variable_from_sset_else_lset_with_default
@@ -90,7 +93,7 @@ def read_compression_factors():
             return
 
 
-def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
+def split_frequency_for_variable(svar, grid, mcfg, context):
     """
     Compute variable level split_freq and returns it as a string
 
@@ -100,6 +103,7 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
     with a default value
 
     """
+    logger = get_logger()
     splitfreqs = get_config_variable("splitfreqs")
     if splitfreqs is None:
         read_splitfreqs()
@@ -117,10 +121,9 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
             compression_factor = get_config_variable("compression_factor")
         if compression_factor and svar.label in compression_factor and \
                 svar.mipTable in compression_factor[svar.label]:
-            if printout:
-                print("Dividing size of %s by %g : %g -> %g"
-                      % (svar.label, compression_factor[svar.label][svar.mipTable], size,
-                         (size + 0.) // compression_factor[svar.label][svar.mipTable]))
+            logger.info("Dividing size of %s by %g : %g -> %g"
+                        % (svar.label, compression_factor[svar.label][svar.mipTable], size,
+                           (size + 0.) // compression_factor[svar.label][svar.mipTable]))
             size = (size + 0.) // compression_factor[svar.label][svar.mipTable]
         # else:
         #    # Some COSP outputs are highly compressed
@@ -133,8 +136,7 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
             # Try by years first
             size_per_year = size * timesteps_per_freq_and_duration(freq, 365, sts)
             nbyears = max_size / float(size_per_year)
-            if printout:
-                print("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
+            logger.info("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
             if nbyears > 1.:
                 if nbyears > 500:
                     return "500y"
@@ -173,8 +175,8 @@ def split_frequency_for_variable(svar, grid, mcfg, context, printout=False):
                     if nbdays > 1.:
                         return "1d"
                     else:
-                        raise (Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
-                                                 " table %s" % (max_size, freq, svar.label, svar.mipTable)))
+                        raise Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
+                                                 " table %s" % (max_size, freq, svar.label, svar.mipTable))
         else:
             raise Dr2xmlGridError(
                 "Warning: field_size returns 0 for var %s, cannot compute split frequency." % svar.label)

@@ -17,6 +17,9 @@ import re
 from io import open
 import six
 
+# Logger
+from logger import get_logger
+
 # DR interface
 from dr_interface import get_collection, get_uid, get_cmor_var_id_by_label, print_DR_stdname_errors, print_DR_errors
 
@@ -55,7 +58,7 @@ sn_issues_home = OrderedDict()
 homevars_list = None
 
 
-def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=False):
+def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None):
     """
     A function to get HOME variables that are not planned in the CMIP6 DataRequest but
     the lab want to outpuut anyway
@@ -70,6 +73,7 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
     Returns:
       A list of 'simplified CMOR variables'
     """
+    logger = get_logger()
     #
     global homevars_list
     #
@@ -181,7 +185,7 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
                     homevars.append(home_var)
         else:
             if table not in extra_vars_per_table:
-                extra_vars_per_table[table] = read_extra_table(path_extra_tables, table, printout=printout)
+                extra_vars_per_table[table] = read_extra_table(path_extra_tables, table)
             if home_var.label in ["ANY", ]:
                 if home_var.mip in ["ANY", ] or home_var.mip in mips:
                     if home_var.experiment not in ["ANY", ]:
@@ -205,15 +209,14 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None, printout=
                                 extravars.append(var_found)
                         else:
                             extravars.append(var_found)
-    if printout:
-        print("Number of 'cmor', 'dev' and 'perso' among home variables: ", len(homevars))
-        print("Number of 'extra' among home variables: ", len(extravars))
+    logger.info("Number of 'cmor', 'dev' and 'perso' among home variables: ", len(homevars))
+    logger.info("Number of 'extra' among home variables: ", len(extravars))
     homevars.extend(extravars)
     homevars_list = homevars
     return homevars
 
 
-def read_extra_table(path, table, printout=False):
+def read_extra_table(path, table):
     """
     A function to get variables contained in an EXTRA Table that are is planned in the CMIP6 DataRequest but
     the lab want to output anyway. EXTRA Table is expected in JSON format, conform with the CMOR3 convention.
@@ -228,6 +231,7 @@ def read_extra_table(path, table, printout=False):
       A list of 'simplified CMOR variables'
     """
     #
+    logger = get_logger()
     if not dims2shape:
         for sshp in get_collection('spatialShape').items:
             dims2shape[sshp.dimensions] = sshp.label
@@ -395,35 +399,30 @@ def read_extra_table(path, table, printout=False):
                                                               realms='atmos aerosol atmosChem')
 
             extravars.append(extra_var)
-    if printout:
-        print("For extra table ", table, " (which has %d variables): " % len(extravars))
-        print("\tVariables which dim was found in extra coordinates table:")
-        for d in sorted(list(dim_from_extra)):
-            print("\t\t%20s : " % d, *sorted(dim_from_extra[d]))
-            print()
-        print("\tDynamical XY-xxx spatial shapes (shapes not found in DR)")
-        for d in sorted(list(dynamic_shapes)):
-            print("\t\t%20s : " % ("XY-" + d), *sorted(dynamic_shapes[d]))
-            print()
+    logger.info("For extra table ", table, " (which has %d variables): " % len(extravars))
+    logger.info("\tVariables which dim was found in extra coordinates table:\n%s" %
+                "\n".join(["\t\t%20s : %s\n" % (d, " ".join(sorted(dim_from_extra[d])))
+                           for d in sorted(list(dim_from_extra))]))
+    logger.info("\tDynamical XY-xxx spatial shapes (shapes not found in DR):\n%s" %
+                "\n".join(["\t\t%20s : %s\n" % (("XY-" + d), " ".join(sorted(dynamic_shapes[d])))
+                           for d in sorted(list(dynamic_shapes))]))
 
     return extravars
 
 
-def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
+def process_home_vars(mip_vars_list, mips, expid=False):
     """
     Deal with home variables.
     """
-    printmore = False
+    logger = get_logger()
     # Read HOME variables
     homevars = get_variable_from_sset_else_lset_with_default('listof_home_vars', default=None)
     path_extra_tables = get_variable_from_sset_else_lset_with_default('path_extra_tables', default=None)
-    home_vars_list = read_home_vars_list(homevars, expid, mips, path_extra_tables, printout=printout)
+    home_vars_list = read_home_vars_list(homevars, expid, mips, path_extra_tables)
     for hv in home_vars_list:
-        printmore = False and (hv.label in ['lwsnl', ])
         hv_info = {"varname": hv.label, "realm": hv.modeling_realm,
                    "freq": hv.frequency, "table": hv.mipTable}
-        if printmore:
-            print(hv_info)
+        logger.debug(hv_info)
         if hv.type in ['cmor', ]:
             # Complement each HOME variable with attributes got from
             # the corresponding CMOR variable (if exist)
@@ -443,18 +442,13 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
                 if not already_in_dr:
                     # Append HOME variable only if not already
                     # selected with the DataRequest
-                    if printmore:
-                        print("Info:", hv_info, "HOMEVar is not in DR. => Taken into account.")
+                    logger.debug("Info:", hv_info, "HOMEVar is not in DR. => Taken into account.")
                     mip_vars_list.append(updated_hv)
                 else:
-                    if printmore:
-                        print("Info:", hv_info, "HOMEVar is already in DR. => Not taken into account.")
+                    logger.debug("Info:", hv_info, "HOMEVar is already in DR. => Not taken into account.")
             else:
-                if printout or printmore:
-                    print("Error:", hv_info, "HOMEVar announced as cmor but no corresponding CMORVar found "
-                                             "=> Not taken into account.")
-                    raise VarsError("Abort: HOMEVar %s is declared as cmor but no corresponding CMORVar found."
-                                    % repr(hv_info))
+                logger.warning("Error:", hv_info, "HOMEVar announced as cmor but no corresponding CMORVar found "
+                                                  "=> Not taken into account.")
         elif hv.type in ['perso', ]:
             # Check if HOME variable anounced as 'perso' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
@@ -466,20 +460,15 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
                                         cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_cmor_var_id_by_label(hv.label))
                 if has_cmor_varname:
-                    if printout:
-                        print("Warning:", hv_info,
-                              "HOMEVar is anounced  as perso, is not a CMORVar, but has a cmor name. "
-                              "=> Not taken into account.")
-                    raise VarsError("Abort: HOMEVar is anounced as perso, is not a CMORVar, but has a cmor name.")
+                    raise VarsError("Error:", hv_info,
+                                    "HOMEVar is anounced  as perso, is not a CMORVar, but has a cmor name. "
+                                    "=> Not taken into account.")
                 else:
-                    if printmore:
-                        print("Info:", hv_info, "HOMEVar is purely personnal. => Taken into account.")
+                    logger.debug("Info:", hv_info, "HOMEVar is purely personnal. => Taken into account.")
                     mip_vars_list.append(hv)
             else:
-                if printout:
-                    print("Error:", hv_info,
-                          "HOMEVar is anounced as perso, but in reality is cmor => Not taken into account.")
-                raise VarsError("Abort: HOMEVar is anounced as perso but should be cmor.")
+                raise VarsError("Error:", hv_info,
+                                "HOMEVar is anounced as perso, but in reality is cmor => Not taken into account.")
         elif hv.type in ['dev', ]:
             # Check if HOME variable anounced as 'dev' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
@@ -489,43 +478,35 @@ def process_home_vars(mip_vars_list, mips, expid=False, printout=False):
                                         cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_cmor_var_id_by_label(hv.label))
                 if has_cmor_varname:
-                    if printout:
-                        print("Warning:", hv_info, "HOMEVar is anounced  as dev, is not a CMORVar, but has a cmor name."
-                                                   " => Not taken into account.")
-                    raise VarsError("Abort: HOMEVar is anounced as dev, is not a CMORVar, but has a cmor name.")
+                    raise VarsError("Warning:", hv_info,
+                                    "HOMEVar is anounced  as dev, is not a CMORVar, but has a cmor name."
+                                    " => Not taken into account.")
                 else:
-                    if printmore:
-                        print("Info:", hv_info, "HOMEVar is purely dev. => Taken into account.")
+                    logger.debug("Info:", hv_info, "HOMEVar is purely dev. => Taken into account.")
                     mip_vars_list.append(hv)
             else:
-                if printout:
-                    print("Error:", hv_info,
-                          "HOMEVar is anounced as dev, but in reality is cmor => Not taken into account.")
-                raise VarsError("Abort: HOMEVar is anounced as dev but should be cmor.")
+                raise VarsError("Error:", hv_info,
+                                "HOMEVar is anounced as dev, but in reality is cmor => Not taken into account.")
         elif hv.type == 'extra':
             if hv.Priority <= get_variable_from_lset_without_default("max_priority"):
-                if printmore:
-                    print("Info:", hv_info, "HOMEVar is read in an extra Table with priority ", hv.Priority,
-                          " => Taken into account.")
+                logger.debug("Info:", hv_info, "HOMEVar is read in an extra Table with priority ", hv.Priority,
+                             " => Taken into account.")
                 mip_vars_list.append(hv)
         else:
-            if printout:
-                print("Error:", hv_info, "HOMEVar type", hv.type,
-                      "does not correspond to any known keyword. => Not taken into account.")
-            raise VarsError("Abort: unknown type keyword provided for HOMEVar %s:" % repr(hv_info))
+            raise VarsError("Error:", hv_info, "HOMEVar type", hv.type,
+                            "does not correspond to any known keyword. => Not taken into account.")
 
 
 def get_corresp_cmor_var(hmvar):
     """
     For a home variable, find the CMOR var which corresponds.
     """
-    printout = False and ("lwsnl" in hmvar.label)
+    logger = get_logger()
     count = 0
     empty_table = (hmvar.mipTable in ['NONE', ]) or (hmvar.mipTable.startswith("None"))
     for cmvarid in get_cmor_var_id_by_label(hmvar.label):
         cmvar = get_uid(cmvarid)
-        if printout:
-            print("get_corresp, checking %s vs %s in %s" % (hmvar.label, cmvar.label, cmvar.mipTable))
+        logger.debug("get_corresp, checking %s vs %s in %s" % (hmvar.label, cmvar.label, cmvar.mipTable))
         #
         # Consider case where no modeling_realm associated to the
         # current CMORvar as matching anyway.
@@ -541,23 +522,20 @@ def get_corresp_cmor_var(hmvar):
         matching = (match_label and (match_freq or empty_table) and (match_table or empty_table) and
                     (match_realm or empty_realm))
         if matching:
-            if printout:
-                print("matches")
+            logger.debug("matches")
             same_shapes = (get_spatial_and_temporal_shapes(cmvar) == [hmvar.spatial_shp, hmvar.temporal_shp])
             if same_shapes:
                 count += 1
                 cmvar_found = cmvar
-                if printout:
-                    print("and same shapes !")
+                logger.debug("and same shapes !")
             else:
                 if not empty_table:
                     print("Error: ", [hmvar.label, hmvar.mipTable],
                           "HOMEVar: Spatial and Temporal Shapes specified DO NOT match CMORvar ones. -> Provided:",
                           [hmvar.spatial_shp, hmvar.temporal_shp], 'Expected:', get_spatial_and_temporal_shapes(cmvar))
         else:
-            if printout:
-                print("doesn't match", match_label, match_freq, cmvar.frequency, hmvar.frequency,
-                      match_table, match_realm, empty_realm, hmvar.mipTable)
+            logger.debug("doesn't match", match_label, match_freq, cmvar.frequency, hmvar.frequency,
+                         match_table, match_realm, empty_realm, hmvar.mipTable)
 
     if count >= 1:
         # empty table means that the frequency is changed (but the variable exists in another frequency cmor table
@@ -581,6 +559,7 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
     Used by get_corresp_cmor_var and by select_cmor_vars_for_lab
 
     """
+    logger = get_logger()
     global ambiguous_mipvarnames
     if ambiguous_mipvarnames is None:
         ambiguous_mipvarnames = analyze_ambiguous_mip_varnames()
@@ -633,8 +612,8 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
         st = get_uid(cmvar.stid)
     except:
         if print_DR_errors:
-            print("DR Error: issue with stid for", svar.label, "in Table ", svar.mipTable,
-                  "  => no cell_methods, cell_measures, dimids and sdims derived.")
+            logger.error("DR Error: issue with stid for", svar.label, "in Table ", svar.mipTable,
+                         "  => no cell_methods, cell_measures, dimids and sdims derived.")
     if st is not None:
         svar.struct = st
         try:
@@ -647,13 +626,13 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
             svar.cell_methods = methods
         except:
             if print_DR_errors:
-                print("DR Error: issue with cell_method for " + st.label)
+                logger.error("DR Error: issue with cell_method for " + st.label)
             # TBS# svar.cell_methods=None
         try:
             svar.cell_measures = get_uid(cmvar.stid).cell_measures.rstrip(' ')
         except:
             if print_DR_errors:
-                print("DR Error: Issue with cell_measures for " + repr(cmvar))
+                logger.error("DR Error: Issue with cell_measures for " + repr(cmvar))
 
         # A number of DR values indicate a choice or a directive for attribute cell_measures (--OPT, --MODEL ...)
         # See interpretation guidelines at https://www.earthsystemcog.org/projects/wip/drq_interp_cell_center
@@ -704,18 +683,19 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
             svar.other_dims_size = product_of_other_dims
     area = cellmethod2area(svar.cell_methods)
     if svar.label in debug:
-        print("complement_svar ... processing %s, area=%s" % (svar.label, str(area)))
+        logger.debug("complement_svar ... processing %s, area=%s" % (svar.label, str(area)))
     if area:
         ambiguous = any([svar.label == alabel and svar.modeling_realm == arealm
                          for (alabel, (arealm, lmethod)) in ambiguous_mipvarnames])
         if svar.label in debug:
-            print("complement_svar ... processing %s, ambiguous=%s" % (svar.label, repr(ambiguous)))
+            logger.debug("complement_svar ... processing %s, ambiguous=%s" % (svar.label, repr(ambiguous)))
         if ambiguous:
             # Special case for a set of land variables
             if not (svar.modeling_realm == 'land' and svar.label[0] == 'c'):
                 svar.label_non_ambiguous = svar.label + "_" + area
     if svar.label in debug:
-        print("complement_svar ... processing %s, label_non_ambiguous=%s" % (svar.label, svar.label_non_ambiguous))
+        logger.debug("complement_svar ... processing %s, label_non_ambiguous=%s" %
+                     (svar.label, svar.label_non_ambiguous))
     # removing pressure suffix must occur after resolving ambiguities (add of area suffix)
     # because this 2 processes cannot be cummulate at this stage.
     # this is acceptable since none of the variables requeted on pressure levels have ambiguous names.
@@ -734,6 +714,7 @@ def get_simple_dim_from_dim_id(dimid):
     """
     Build a simple_Dim object which characteristics fit with dimid.
     """
+    logger = get_logger()
     sdim = SimpleDim()
     d = get_uid(dimid)
     sdim.label = d.label
@@ -753,7 +734,7 @@ def get_simple_dim_from_dim_id(dimid):
         sdim.stdname = get_uid(d.standardName).uid
     except:
         if print_DR_stdname_errors:
-            print("Issue with standardname for dimid %s" % dimid)
+            logger.error("Issue with standardname for dimid %s" % dimid)
         sdim.stdname = ""
     sdim.long_name = d.title
     sdim.out_name = d.altLabel

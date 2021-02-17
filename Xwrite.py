@@ -21,6 +21,9 @@ import six
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Global variables and configuration tools
 from config import get_config_variable
 
@@ -89,6 +92,7 @@ def wr(out, key, dic_or_val=None, num_type="string", default=None):
     :param default: default value to be use
     :return: Add an XML variable to ``out``.
     """
+    logger = get_logger()
     print_variables = get_variable_from_lset_with_default("print_variables", True)
     if not print_variables:
         return
@@ -104,19 +108,19 @@ def wr(out, key, dic_or_val=None, num_type="string", default=None):
                 if default is not False:
                     val = default
             else:
-                print('error : %s not in dic and default is None' % key)
+                logger.error('error : %s not in dic and default is None' % key)
     else:
         if dic_or_val is not None:
             val = dic_or_val
         else:
-            print('error in wr,  no value provided for %s' % key)
+            logger.error('error in wr,  no value provided for %s' % key)
     if val:
-        if num_type == "string":
+        if num_type in ["string", ]:
             # val=val.replace(">","&gt").replace("<","&lt").replace("&","&amp").replace("'","&apos").replace('"',"&quot").strip()
             val = val.replace(">", "&gt").replace("<", "&lt").strip()
             # CMIP6 spec : no more than 1024 char
             val = val[0:1024]
-        if num_type != "string" or len(val) > 0:
+        if num_type not in ["string", ] or len(val) > 0:
             attrib_dict = OrderedDict()
             attrib_dict["name"] = key
             attrib_dict["type"] = num_type
@@ -146,6 +150,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     variables requested by CF convention (e.g. for hybrid coordinate, surface_pressure field
     plus AP and B arrays and their bounds, and lev + lev_bnds with formula attribute)
     """
+    logger = get_logger()
     #
     # If list of included vars has size 1, activate debug on the corresponding variable
     inc = get_variable_from_lset_with_default('included_vars', [])
@@ -187,7 +192,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             else:
                 alias = get_variable_from_lset_without_default("ping_variables_prefix") + "tau_stress"
         if sv.label in debug:
-            print("write_xios_file_def_for_svar ... processing %s, alias=%s" % (sv.label, alias))
+            logger.debug("write_xios_file_def_for_svar ... processing %s, alias=%s" % (sv.label, alias))
 
         # suppression des terminaisons en "Clim" pour l'alias : elles concernent uniquement les cas
         # d'absence de variation inter-annuelle sur les GHG. Peut-etre genant pour IPSL ?
@@ -346,14 +351,14 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         if c not in actual_components:
             ok = False
             if not get_variable_from_sset_with_default("CORDEX_data", False):
-                print("Model component %s is required by CMIP6 CV for experiment %s and not present (present=%s)" %
-                      (c, experiment_id, repr(actual_components)))
+                logger.warning("Model component %s is required by CMIP6 CV for experiment %s and not present "
+                               "(present=%s)" % (c, experiment_id, repr(actual_components)))
     for c in actual_components:
         if c not in allowed_components and c not in required_components:
             ok = False or get_variable_from_sset_with_default('bypass_CV_components', False)
             if not get_variable_from_sset_with_default("CORDEX_data", False):
-                print("Warning: Model component %s is present but not required nor allowed (%s)" %
-                      (c, repr(allowed_components)))
+                logger.warning("Warning: Model component %s is present but not required nor allowed (%s)" %
+                               (c, repr(allowed_components)))
     if not ok:
         raise Dr2xmlError("Issue with model components")
     #
@@ -451,7 +456,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         # Try to get enddate for the CMOR variable from the DR
         if sv.cmvar is not None:
             # print "calling endyear_for... for %s, with year="%(sv.label), year
-            lastyear = endyear_for_CMORvar(sv.cmvar, expid, year, sv.label in debug)
+            lastyear = endyear_for_CMORvar(sv.cmvar, expid, year)
             # print "lastyear=",lastyear," enddate=",enddate
         if lastyear is None or (enddate is not None and lastyear >= int(enddate[0:4])):
             # DR doesn't specify an end date for that var, or a very late one
@@ -468,8 +473,8 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
         else:
             # Use requestItems-based end date as the latest possible date when it is earlier than run end date
             if sv.label in debug:
-                print("split_last_date year %d derived from DR for variable %s in table %s for year %d" %
-                      (lastyear, sv.label, table, year))
+                logger.debug("split_last_date year %d derived from DR for variable %s in table %s for year %d" %
+                             (lastyear, sv.label, table, year))
             endyear = "{:04d}".format(lastyear + 1)
             if lastyear < 1000:
                 Dr2xmlError(
@@ -573,7 +578,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
             try:
                 inst = json.loads(json_fp.read())['institution_id'][institution_id]
             except:
-                raise Dr2xmlError("Fatal: Institution_id for %s not found in CMIP6_CV at %s" % (institution, cvspath))
+                raise Dr2xmlError("Fatal: Institution_id for %s not found in CMIP6_CV at %s" % (inst, cvspath))
     wr(xml_file, "institution", inst)
     #
     with open(cvspath + project + "_license.json", "r") as json_fp:
@@ -777,6 +782,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     # ---
     # Build XIOS auxiliary field elements (stored in field_defs)
     # --------------------------------------------------------------------
+    logger = get_logger()
     ssh = sv.spatial_shp
     prefix = get_variable_from_lset_without_default("ping_variables_prefix")
 
@@ -817,7 +823,7 @@ def create_xios_aux_elmts_defs(sv, alias, table, field_defs, axis_defs, grid_def
     grid_with_vertical_interpolation = None
 
     # translate 'outermost' time cell_methods to Xios 'operation')
-    operation, detect_missing, clim = analyze_cell_time_method(sv.cell_methods, sv.label, table, printout=False)
+    operation, detect_missing, clim = analyze_cell_time_method(sv.cell_methods, sv.label, table)
     #
     # --------------------------------------------------------------------
     # Handle vertical interpolation, both XY-any and Y-P outputs
@@ -1070,8 +1076,7 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
     re-using the domain of original grid
 
     """
-
-    printout = False
+    logger = get_logger()
     # get grid for the variable , before vertical interpo. if any
     # (could rather use last_grid_id and analyze if it has pressure dim)
     context_index = get_config_variable("context_index")
@@ -1088,8 +1093,7 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
         alias_ping = ping_alias(sv, pingvars)
         input_grid_id = id2gridid(alias_ping, context_index)
     input_grid_def = get_grid_def_with_lset(input_grid_id, grid_defs)
-    if printout:
-        print("process_singleton : ", "processing %s with grid %s " % (alias, input_grid_id))
+    logger.info("process_singleton : ", "processing %s with grid %s " % (alias, input_grid_id))
     #
     further_field_id = alias
     further_grid_id = input_grid_id
@@ -1146,15 +1150,13 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
             #
             scalar_def = create_xml_element(tag="scalar", attrib=scalar_dict)
             scalar_defs[scalar_id] = scalar_def
-            if printout:
-                print("process_singleton : ", "adding scalar %s" % create_string_from_xml_element(scalar_def))
+            logger.info("process_singleton : ", "adding scalar %s" % create_string_from_xml_element(scalar_def))
             #
             # Create a grid with added (or changed) scalar
             glabel = further_grid_id + "_" + scalar_id
             further_grid_def = add_scalar_in_grid(further_grid_def, glabel, scalar_id, name,
                                                   sdim.axis == "Z" and further_grid_def != "NATURE_landuse")
-            if printout:
-                print("process_singleton : ", " adding grid %s" % create_string_from_xml_element(further_grid_def))
+            logger.info("process_singleton : ", " adding grid %s" % create_string_from_xml_element(further_grid_def))
             grid_defs[glabel] = further_grid_def
             further_grid_id = glabel
 
@@ -1170,8 +1172,7 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
         field_def_dict["detect_missing_value"] = "true"
         field_def = create_xml_element(tag="field", text=alias, attrib=field_def_dict)
         field_defs[further_field_id] = field_def
-        if printout:
-            print("process_singleton : ", " adding field %s" % create_string_from_xml_element(field_def))
+        logger.info("process_singleton : ", " adding field %s" % create_string_from_xml_element(field_def))
     return further_field_id, further_grid_id
 
 
@@ -1309,6 +1310,7 @@ def write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, f
     """
     Write XIOS file_def.
     """
+    logger = get_logger()
     # --------------------------------------------------------------------
     # Start writing XIOS file_def file:
     # file_definition node, including field child-nodes
@@ -1355,8 +1357,8 @@ def write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, f
                                                  dummies, skipped_vars_per_table, actually_written_vars,
                                                  prefix, context, grid, pingvars, enddate, attributes)
             else:
-                print("Duplicate variable %s,%s in table %s is skipped, preferred is %s" %
-                      (svar.label, svar.mipVarLabel, table, count[svar.mipVarLabel].label))
+                logger.warning("Duplicate variable %s,%s in table %s is skipped, preferred is %s" %
+                               (svar.label, svar.mipVarLabel, table, count[svar.mipVarLabel].label))
     # Add cfsites if needed
     if cfsites_grid_id in grid_defs:
         xml_file_definition.append(cfsites_input_filedef())

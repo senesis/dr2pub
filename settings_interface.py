@@ -13,6 +13,8 @@ from six import string_types
 
 from utils import Dr2xmlError, decode_if_needed, print_struct
 
+from logger import get_logger
+
 
 # Initial simulation (sset) and laboratory (lset) dictionaries
 sset = None
@@ -39,6 +41,7 @@ def decode_strings(struct):
     :param struct:
     :return:
     """
+    logger = get_logger()
     if isinstance(struct, (int, float)):
         return struct
     elif isinstance(struct, string_types):
@@ -54,6 +57,7 @@ def decode_strings(struct):
     elif isinstance(struct, set):
         return decode_strings_in_set(struct)
     else:
+        logger.error("Type of value %s is not handled by dr2xml, please report it the development team." % type(struct))
         raise TypeError("Type of value %s is not handled by dr2xml, please report it the development team."
                         % type(struct))
 
@@ -114,9 +118,9 @@ def format_dict_for_printing(dictionary):
     :param dictionary:
     :return:
     """
-    if dictionary == "lset":
+    if dictionary in ["lset", ]:
         dictionary = lset
-    elif dictionary == "sset":
+    elif dictionary in ["sset", ]:
         dictionary = sset
     return print_struct(dictionary, back_line=True, sort=True)
 

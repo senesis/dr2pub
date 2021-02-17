@@ -12,6 +12,9 @@ from collections import OrderedDict
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Interface to settings dictionaries
 from settings_interface import get_variable_from_lset_without_default
 # Interface to Data Request
@@ -39,21 +42,24 @@ def get_spatial_and_temporal_shapes(cmvar):
     """
     Get the spatial et temporal shape of a CMOR variable from the DR.
     """
+    logger = get_logger()
     spatial_shape = False
     temporal_shape = False
     if cmvar.stid == "__struct_not_found_001__":
         if print_DR_errors:
-            print("Warning: stid for ", cmvar.label, " in table ", cmvar.mipTable,
-                  " is a broken link to structure in DR: ", cmvar.stid)
+            logger.warning("Warning: stid for ", cmvar.label, " in table ", cmvar.mipTable,
+                           " is a broken link to structure in DR: ", cmvar.stid)
     else:
         struct = get_uid(cmvar.stid)
         spatial_shape = get_uid(struct.spid).label
         temporal_shape = get_uid(struct.tmid).label
     if print_DR_errors:
         if not spatial_shape:
-            print("Warning: spatial shape for ", cmvar.label, " in table ", cmvar.mipTable, " not found in DR.")
+            logger.warning("Warning: spatial shape for ", cmvar.label, " in table ", cmvar.mipTable,
+                           " not found in DR.")
         if not temporal_shape:
-            print("Warning: temporal shape for ", cmvar.label, " in table ", cmvar.mipTable, " not found in DR.")
+            logger.warning("Warning: temporal shape for ", cmvar.label, " in table ", cmvar.mipTable,
+                           " not found in DR.")
     return [spatial_shape, temporal_shape]
 
 
@@ -64,17 +70,18 @@ def analyze_ambiguous_mip_varnames(debug=[]):
     """
     # Compute a dict which keys are MIP varnames and values = list
     # of CMORvars items for the varname
+    logger = get_logger()
     d = OrderedDict()
     for v in get_collection('var').items:
         if v.label not in d:
             d[v.label] = []
             if v.label in debug:
-                print("Adding %s" % v.label)
+                logger.debug("Adding %s" % v.label)
         refs = get_request_by_id_by_sect(v.uid, 'CMORvar')
         for r in refs:
             d[v.label].append(get_uid(r))
             if v.label in debug:
-                print("Adding CmorVar %s(%s) for %s" % (v.label, get_uid(r).mipTable, get_uid(r).label))
+                logger.debug("Adding CmorVar %s(%s) for %s" % (v.label, get_uid(r).mipTable, get_uid(r).label))
 
     # Replace dic values by dic of area portion of cell_methods
     for vlabel in d:
@@ -88,7 +95,7 @@ def analyze_ambiguous_mip_varnames(debug=[]):
                     cm = get_uid(st.cmid).cell_methods
                 except:
                     # pass
-                    print("No cell method for %-15s %s(%s)" % (st.label, cv.label, cv.mipTable))
+                    logger.warning("No cell method for %-15s %s(%s)" % (st.label, cv.label, cv.mipTable))
                 if cm is not None:
                     area = cellmethod2area(cm)
                     realm = cv.modeling_realm
@@ -96,7 +103,7 @@ def analyze_ambiguous_mip_varnames(debug=[]):
                         area = None
                     # realm=""
                     if vlabel in debug:
-                        print("for %s 's CMORvar %s(%s), area=%s" % (vlabel, cv.label, cv.mipTable, area))
+                        logger.debug("for %s 's CMORvar %s(%s), area=%s" % (vlabel, cv.label, cv.mipTable, area))
                     if realm not in d[vlabel]:
                         d[vlabel][realm] = OrderedDict()
                     if area not in d[vlabel][realm]:
@@ -117,10 +124,10 @@ def analyze_ambiguous_mip_varnames(debug=[]):
                     ambiguous.append((vlabel, (realm, d[vlabel][realm])))
     if "all" in debug:
         for v, p in ambiguous:
-            print(v)
+            logger.debug(v)
             b, d = p
             for r in d:
-                print("\t", r, d[r])
+                logger.debug("\t", r, d[r])
     return ambiguous
 
 

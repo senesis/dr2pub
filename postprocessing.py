@@ -13,6 +13,9 @@ from collections import OrderedDict
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Global variables and configuration tools
 from config import get_config_variable
 
@@ -46,6 +49,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     vertical axis a zoom of the union axis)
     """
     #
+    logger = get_logger()
     vdims = [sd for sd in sv.sdims.values() if is_vert_dim(sd)]
     if len(vdims) == 1:
         sd = vdims[0]
@@ -64,7 +68,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     # sd=vdims[0]
     alias_with_levels = "_".join([alias, sd.label]) # e.g. 'CMIP6_hus7h_plev7h'
     if alias_with_levels in pingvars:
-        print("No vertical interpolation for %s because the pingfile provides it" % alias_with_levels)
+        logger.warning("No vertical interpolation for %s because the pingfile provides it" % alias_with_levels)
         return src_grid_id, alias_with_levels
         # raise Dr2xmlError("Finding an alias with levels (%s) in pingfile is unexpected")
     #
@@ -152,7 +156,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
 
 
 def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs, axis_defs, grid_defs, domain_defs,
-                       operation, frequency, printout=False):
+                       operation, frequency):
     """
     Based on a field FIELD_ID defined on some grid GRID_ID, build all XIOS constructs
     needed to derive the zonal mean of the field, by chaining the definition of
@@ -170,7 +174,7 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
     is for optimzation when both contexts occur
 
     """
-    printout = False
+    logger = get_logger()
 
     # e.g. <field id="CMIP6_ua_plev39_average" field_ref="CMIP6_ua_plev39" operation="average" />
     xios_freq = cmip6_freq_to_xios_freq(frequency, None)
@@ -180,8 +184,7 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
     field_1_dict["field_ref"] = field_id
     field_1_dict["operation"] = operation
     field_defs[field1_id] = create_xml_element(tag="field", attrib=field_1_dict)
-    if printout:
-        print("+++ field1 ", field1_id, "\n", create_string_from_xml_element(field_defs[field1_id]))
+    logger.debug("+++ field1 ", field1_id, "\n", create_string_from_xml_element(field_defs[field1_id]))
     #
     # e.g. <field id="CMIP6_ua_plev39_average_1d" field_ref="CMIP6_ua_plev39_average" freq_op="1d" >
     #              @CMIP6_ua_plev39_average </field>
@@ -191,8 +194,7 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
     field_2_dict["field_ref"] = field1_id
     field_2_dict["freq_op"] = xios_freq
     field_defs[field2_id] = create_xml_element(tag="field", text="@{}".format(field1_id), attrib=field_2_dict)
-    if printout:
-        print("+++ field2 ", field2_id, "\n", create_string_from_xml_element(field_defs[field2_id]))
+    logger.debug("+++ field2 ", field2_id, "\n", create_string_from_xml_element(field_defs[field2_id]))
 
     if target_hgrid_id:  # case where an intermediate grid is needed
         # e.g. <field id="CMIP6_ua_plev39_average_1d_complete" field_ref="CMIP6_ua_plev39_average_1d"
@@ -201,18 +203,16 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
         # Must create and a use a grid similar to the last one defined
         # for that variable, except for a change in the hgrid/domain (=> complete)
         grid_id3 = change_domain_in_grid(target_hgrid_id, grid_defs, src_grid_id=grid_id)
-        if printout:
-            print("+++ grid3 ", grid_id3, "\n", create_string_from_xml_element(grid_defs[grid_id3]))
+        logger.debug("+++ grid3 ", grid_id3, "\n", create_string_from_xml_element(grid_defs[grid_id3]))
         field_3_dict = OrderedDict()
         field_3_dict["id"] = field3_id
         field_3_dict["field_ref"] = field2_id
         field_3_dict["grid_ref"] = grid_id3
         field_defs[field3_id] = create_xml_element(tag="field", attrib=field_3_dict)
-        if printout:
-            print("+++ field3 ", field3_id, "\n", create_string_from_xml_element(field_defs[field3_id]))
+        logger.debug("+++ field3 ", field3_id, "\n", create_string_from_xml_element(field_defs[field3_id]))
     else:
         # Case where the input field is already on a rectangular grid
-        print('~~~~>', "no target_hgrid_id for field=", field_id, " grid=", grid_id)
+        logger.info('~~~~>', "no target_hgrid_id for field=", field_id, " grid=", grid_id)
         field3_id = field2_id
         grid_id3 = grid_id
 
@@ -225,21 +225,19 @@ def process_zonal_mean(field_id, grid_id, target_hgrid_id, zgrid_id, field_defs,
     #             grid_ref="FULL_klev_plev39_complete_glat" />
     field4_id = "_".join([field2_id, zgrid_id])
     grid4_id = change_domain_in_grid(zgrid_id, grid_defs, src_grid_id=grid_id3, turn_into_axis=True)
-    if printout:
-        print("+++ grid4 ", grid4_id, "\n", create_string_from_xml_element(grid_defs[grid4_id]))
+    logger.debug("+++ grid4 ", grid4_id, "\n", create_string_from_xml_element(grid_defs[grid4_id]))
 
     field_4_dict = OrderedDict()
     field_4_dict["id"] = field4_id
     field_4_dict["field_ref"] = field3_id
     field_4_dict["grid_ref"] = grid4_id
     field_defs[field4_id] = create_xml_element(tag="field", attrib=field_4_dict)
-    if printout:
-        print("+++ field4 ", field4_id, "\n", create_string_from_xml_element(field_defs[field4_id]))
+    logger.debug("+++ field4 ", field4_id, "\n", create_string_from_xml_element(field_defs[field4_id]))
 
     return field4_id, grid4_id
 
 
-def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=False):
+def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs):
     """
     Based on a field id ALIAS, and gobal CONTEXT_INDEX, creates and
     stores Xios xml constructs for defining a derived variable which
@@ -259,8 +257,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
 
 
     """
-
-    printout = False
+    logger = get_logger()
     # 0- create a clone of ALIAS with operation=average
     field_for_average_id = alias + "_for_average"
     field_dict = OrderedDict()
@@ -269,8 +266,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     field_dict["operation"] = "average"
     field_defs[field_for_average_id] = create_xml_element(tag="field", attrib=field_dict)
 
-    if printout:
-        print("***>", field_defs[field_for_average_id])
+    logger.debug("***>", field_defs[field_for_average_id])
 
     # 1- create a grid composed of ALIAS's original grid extended by a scalar; id is <grid_id>_scalar_grid
     context_index = get_config_variable("context_index")
@@ -281,8 +277,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     grid_scalar_id = grid_id + "_plus_scalar"
     grid_scalar.attrib["id"] = grid_scalar_id
     create_xml_sub_element(xml_element=grid_scalar, tag="scalar")
-    if printout:
-        print("***>", create_string_from_xml_element(grid_scalar))
+    logger.debug("***>", create_string_from_xml_element(grid_scalar))
     grid_defs[grid_scalar_id] = grid_scalar
 
     # 2- create a construct for re-gridding the field with operation average on that ,
@@ -294,8 +289,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     averaged_field_dict["grid_ref"] = grid_scalar_id
     field_defs[averaged_field_id] = create_xml_element(tag="field", text="@{}".format(field_for_average_id),
                                                        attrib=averaged_field_dict)
-    if printout:
-        print("***>", create_string_from_xml_element(field_defs[averaged_field_id]))
+    logger.debug("***>", create_string_from_xml_element(field_defs[averaged_field_id]))
 
     # 3- create an axis of 24 values having sub-construct 'time splitting'; axis id is "24h_axis"
     axis_24h_id = "hour_in_diurnal_cycle"
@@ -310,8 +304,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     axis_24h = create_xml_element(tag="axis", attrib=axis_24h_dict)
     create_xml_sub_element(xml_element=axis_24h, tag="temporal_splitting")
     axis_defs[axis_24h_id] = axis_24h
-    if printout:
-        print("***>", create_string_from_xml_element(axis_24h))
+    logger.debug("***>", create_string_from_xml_element(axis_24h))
 
     # 4- create a grid composed of ALIAS's original grid extended by that axis; id is <grid_id>_24h_grid
     grid_24h_id = grid_id + "_plus_axis24h"
@@ -325,8 +318,7 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     grid_24h_dict["axis_type"] = "T"
     create_xml_sub_element(xml_element=grid_24h, tag="axis", attrib=grid_24h_dict)
     grid_defs[grid_24h_id] = grid_24h
-    if printout:
-        print("***>", create_string_from_xml_element(grid_24h))
+    logger.debug("***>", create_string_from_xml_element(grid_24h))
 
     # 5- create a construct for re-gridding ALIAS_SCALAR on that second grid; id is ALIAS_24hcycle, which is returned
     #        <field id="field_B"  grid_ref="grid_B" field_ref="field_As" />
@@ -337,14 +329,14 @@ def process_diurnal_cycle(alias, field_defs, grid_defs, axis_defs, printout=Fals
     alias_24h_dict["field_ref"] = averaged_field_id
     alias_24h = create_xml_element(tag="field", attrib=alias_24h_dict)
     field_defs[alias_24h_id] = alias_24h
-    if printout:
-        print("***>", create_string_from_xml_element(alias_24h), "\n")
+    logger.debug("***>", create_string_from_xml_element(alias_24h), "\n")
 
     return alias_24h_id, grid_24h_id
 
 
 def process_levels_over_orog(sv, alias, pingvars, src_grid_id, field_defs, axis_defs, grid_defs, domain_defs,
                              scalar_defs, table):
+    logger = get_logger()
     vdims = [sd for sd in sv.sdims.values() if is_vert_dim(sd)]
     if len(vdims) == 1:
         sd = vdims[0]
@@ -361,7 +353,7 @@ def process_levels_over_orog(sv, alias, pingvars, src_grid_id, field_defs, axis_
 
     field_id = "_".join([alias, sd.label])
     if field_id in pingvars:
-        print("No computing on height level other the ground needed, found %s in pingvars." % field_id)
+        logger.warning("No computing on height level other the ground needed, found %s in pingvars." % field_id)
         grid_id = src_grid_id
     else:
         context_index = get_config_variable("context_index")

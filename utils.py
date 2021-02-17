@@ -10,6 +10,8 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import sys
 from collections import OrderedDict
 
+from logger import get_logger
+
 
 class Dr2xmlError(Exception):
     """
@@ -19,6 +21,8 @@ class Dr2xmlError(Exception):
         self.valeur = valeur
 
     def __str__(self):
+        logger = get_logger()
+        logger.error(repr(self.valeur))
         return "\n\n" + repr(self.valeur) + "\n\n"
     # """ just for test"""
 
@@ -31,6 +35,8 @@ class Dr2xmlGridError(Exception):
         self.valeur = valeur
 
     def __str__(self):
+        logger = get_logger()
+        logger.error(repr(self.valeur))
         return repr(self.valeur)
 
 
@@ -42,6 +48,8 @@ class VarsError(Exception):
         self.valeur = valeur
 
     def __str__(self):
+        logger = get_logger()
+        logger.error(repr(self.valeur))
         return "\n\n" + repr(self.valeur) + "\n\n"
 
 
@@ -52,12 +60,14 @@ def encode_if_needed(a_string, encoding="utf-8"):
     :param encoding:
     :return:
     """
+    logger = get_logger()
     if sys.version.startswith("2."):
         return a_string.encode(encoding)
     elif sys.version.startswith("3."):
         return a_string
     else:
-        raise OSError("Unknown Python version %s", sys.version.split()[0])
+        logger.error("Unknown Python version %s" % sys.version.split()[0])
+        raise OSError("Unknown Python version %s" % sys.version.split()[0])
 
 
 def decode_if_needed(a_string, encoding="utf-8"):
@@ -67,11 +77,13 @@ def decode_if_needed(a_string, encoding="utf-8"):
     :param encoding:
     :return:
     """
+    logger = get_logger()
     if sys.version.startswith("2."):
         return a_string.decode(encoding)
     elif sys.version.startswith("3."):
         return a_string
     else:
+        logger.error("Unknown Python version %s" % sys.version.split()[0])
         raise OSError("Unknown Python version %s", sys.version.split()[0])
 
 

@@ -62,12 +62,16 @@ from collections import OrderedDict
 # Utilities
 from utils import print_struct
 
+# Logger
+from logger import initialize_logger, get_logger, change_log_level
+
 # Global variables and configuration tools
 from config import get_config_variable, set_config_variable, python_version, initialize_config_variables
 
 # Interface to settings dictionaries
 from settings_interface import initialize_dict, get_variable_from_lset_with_default, \
     get_variable_from_lset_without_default
+
 # Interface to Data Request
 from dr_interface import get_DR_version, get_uid, get_request_by_id_by_sect
 
@@ -592,18 +596,26 @@ example_simulation_settings = {
 
 
 def generate_file_defs(lset, sset, year, enddate, context, cvs_path, pingfiles=None,
-                       dummies='include', printout=False, dirname="./", prefix="", attributes=[],
+                       dummies='include', printout=False, dirname="./", prefix="", attributes=list(),
                        select="on_expt_and_year"):
     """
     A wrapper for profiling top-level function : generate_file_defs_inner
     """
+    debug = False
+    if debug:
+        default_level = "debug"
+    elif printout:
+        default_level = "info"
+    else:
+        default_level = "warning"
+    initialize_logger(default=True, level=default_level)
     # pr = cProfile.Profile()
     # pr.enable()
     # Initialize lset and sset variables for all functions
     initialize_config_variables()
     initialize_dict(lset, sset)
     generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingfiles=pingfiles,
-                             dummies=dummies, printout=printout, dirname=dirname,
+                             dummies=dummies, dirname=dirname,
                              prefix=prefix, attributes=attributes, select=select)
     # pr.disable()
     # if python_version == "python2":
@@ -618,8 +630,8 @@ def generate_file_defs(lset, sset, year, enddate, context, cvs_path, pingfiles=N
 
 
 def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingfiles=None,
-                             dummies='include', printout=False, dirname="./", prefix="",
-                             attributes=[], select="on_expt_and_year"):
+                             dummies='include', dirname="./", prefix="",
+                             attributes=list(), select="on_expt_and_year"):
     """
     Using the DR module, a dict of lab settings ``lset``, and a dict
     of simulation settings ``sset``, generate an XIOS file_defs 'file' for a
@@ -658,11 +670,11 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     :return: An output file named dirname/filedefs_context.xml. It has a CMIP6 compliant name, with prepended prefix.
 
     """
+    logger = get_logger()
     #
-    debug = False
     cmvk = "CMIP6_CV_version"
     if cmvk in attributes:
-        print("* %s: %s" % (cmvk, attributes[cmvk]))
+        logger.info("* %s: %s" % (cmvk, attributes[cmvk]))
     # --------------------------------------------------------------------
     # Parse XIOS settings file for the context
     # --------------------------------------------------------------------
@@ -673,13 +685,18 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     print()
     print(50 * "*")
     print()
+    default_log_level = logger.level
+    if get_variable_from_lset_with_default("debug_parsing", False):
+        change_log_level("debug")
     set_config_variable("context_index",
-                        init_context(context, get_variable_from_lset_with_default("path_to_parse", "./"),
-                                     printout=get_variable_from_lset_with_default("debug_parsing", False)))
+                        init_context(context, get_variable_from_lset_with_default("path_to_parse", "./")))
+    if get_variable_from_lset_with_default("debug_parsing", False):
+        change_log_level(default_log_level)
     if get_config_variable("context_index") is None:
+        logger.error("Variable 'context_index' is not set.")
         sys.exit(1)
     set_config_variable("cell_method_warnings", list())
-    warnings_for_optimisation = []
+    warnings_for_optimisation = list()
     initialize_sn_issues(OrderedDict())
     #
     # --------------------------------------------------------------------
@@ -687,7 +704,7 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     # --------------------------------------------------------------------
     skipped_vars_per_table = OrderedDict()
     actually_written_vars = list()
-    svars_per_table = select_variables_to_be_processed(year, context, select, printout, debug)
+    svars_per_table = select_variables_to_be_processed(year, context, select)
     #
     # --------------------------------------------------------------------
     # Read ping_file defined variables
@@ -708,8 +725,7 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
         for svl in svars_per_table.values():
             svars_full_list.extend(svl)
         create_xios_axis_and_grids_for_plevs_unions(svars_full_list, multi_plev_suffixes.union(single_plev_suffixes),
-                                                    dummies, axis_defs, grid_defs, field_defs, all_ping_refs,
-                                                    printout=False)
+                                                    dummies, axis_defs, grid_defs, field_defs, all_ping_refs)
     #
     # --------------------------------------------------------------------
     # Write XIOS file_def
@@ -719,8 +735,7 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     write_xios_file_def(filename, svars_per_table, year, lset, sset, cvs_path, field_defs, axis_defs, grid_defs,
                         scalar_defs, file_defs, dummies, skipped_vars_per_table, actually_written_vars, prefix, context,
                         pingvars, enddate, attributes)
-    if printout:
-        print("\nfile_def written as %s" % filename)
+    logger.info("\nfile_def written as %s" % filename)
 
     #
     # --------------------------------------------------------------------
@@ -728,9 +743,8 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     # --------------------------------------------------------------------
     # mpmoine_petitplus:generate_file_defs: pour sortir des stats sur ce que l'on sort reelement
     # SS - non : gros plus
-    if printout:
-        print_some_stats(context, svars_per_table, skipped_vars_per_table,
-                         actually_written_vars, get_variable_from_lset_with_default("print_stats_per_var_label", False))
+    print_some_stats(context, svars_per_table, skipped_vars_per_table,
+                     actually_written_vars, get_variable_from_lset_with_default("print_stats_per_var_label", False))
 
     warn = OrderedDict()
     for warning, label, table in get_config_variable("cell_method_warnings"):
@@ -738,13 +752,13 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
             warn[warning] = set()
         warn[warning].add(label)
     if len(warn) > 0:
-        print("\nWarnings about cell methods (with var list)")
+        logger.warning("\nWarnings about cell methods (with var list)")
         for w in warn:
-            print("\t", w, " for vars : ", print_struct(warn[w]))
+            logger.warning("\t", w, " for vars : ", print_struct(warn[w]))
     if len(warnings_for_optimisation) > 0:
-        print("Warning for fields which cannot be optimised (i.e. average before remap) because of an expr with @\n\t",)
+        logger.warning("Warning for fields which cannot be optimised (i.e. average before remap) because of an expr with @\n\t",)
         for w in warnings_for_optimisation:
-            print(w.replace(get_variable_from_lset_without_default('ping_variables_prefix'), ""),)
+            logger.warning(w.replace(get_variable_from_lset_without_default('ping_variables_prefix'), ""),)
         print()
 
 

@@ -17,6 +17,9 @@ import sys
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Global variables and configuration tools
 from config import get_config_variable
 
@@ -36,6 +39,7 @@ def read_pingfiles_variables(pingfiles, dummies):
     """
     Read variables defined in the ping files.
     """
+    logger = get_logger()
     pingvars = list()
     all_ping_refs = OrderedDict()
     if pingfiles is not None:
@@ -45,7 +49,7 @@ def read_pingfiles_variables(pingfiles, dummies):
             ping_refs = read_xml_elmt_or_attrib(pingfile, tag='field', attrib='field_ref')
             # ping_refs=read_xml_elmt_or_attrib(pingfile, tag='field')
             if ping_refs is None:
-                print("Error: issue accessing pingfile " + pingfile)
+                logger.error("Error: issue accessing pingfile " + pingfile)
                 return
             all_ping_refs.update(ping_refs)
             if dummies == "include":
@@ -56,22 +60,22 @@ def read_pingfiles_variables(pingfiles, dummies):
                     if len(pingvars) != len(ping_refs):
                         for v in ping_refs:
                             if v not in pingvars:
-                                print(v,)
-                        print()
+                                logger.info(v,)
+                        logger.info("")
                         raise Dr2xmlError("They are still dummies in %s , while option is 'forbid' :" % pingfile)
                     else:
                         pingvars = list(ping_refs)
                 elif dummies == "skip":
                     pass
                 else:
-                    print("Forbidden option for dummies : " + dummies)
+                    logger.error("Forbidden option for dummies : " + dummies)
                     sys.exit(1)
             all_pingvars.extend(pingvars)
         pingvars = all_pingvars
     return pingvars, all_ping_refs
 
 
-def read_xml_elmt_or_attrib(filename, tag='field', attrib=None, printout=False):
+def read_xml_elmt_or_attrib(filename, tag='field', attrib=None):
     """
     Returns a dict of objects tagged TAG in FILENAME, which
     - keys are ids
@@ -81,30 +85,26 @@ def read_xml_elmt_or_attrib(filename, tag='field', attrib=None, printout=False):
     Returns None if filename does not exist
     """
     #
+    logger = get_logger()
     rep = OrderedDict()
-    if printout:
-        print("processing file %s :" % filename,)
+    logger.info("processing file %s :" % filename,)
     if os.path.exists(filename):
-        if printout:
-            print("OK", filename)
+        logger.info("OK", filename)
         root = get_root_of_xml_file(filename)
         defs = get_xml_childs(root, tag)
         if defs:
             for field in defs:
-                if printout:
-                    print(".",)
+                logger.info(".",)
                 key = field.attrib['id']
                 if attrib is None:
                     value = field
                 else:
                     value = field.attrib.get(attrib, None)
                 rep[key] = value
-            if printout:
-                print()
+            logger.info("")
             return rep
     else:
-        if printout:
-            print("No file ")
+        logger.info("No file ")
         return None
 
 
@@ -171,6 +171,7 @@ def ping_file_for_realms_list(settings, context, lrealms, svars, path_special, d
     from DR-standard ones
 
     """
+    logger = get_logger()
     name = ""
     for r in lrealms:
         name += "_" + r.replace(" ", "%")
@@ -240,7 +241,7 @@ def ping_file_for_realms_list(settings, context, lrealms, svars, path_special, d
             else:
                 label = v.label_without_psuffix
             if v.label in debug:
-                print("pingFile ... processing %s in table %s, label=%s" % (v.label, v.mipTable, label))
+                logger.debug("pingFile ... processing %s in table %s, label=%s" % (v.label, v.mipTable, label))
 
             if specials and label in specials:
                 line = create_string_from_xml_element(specials[label]).replace("DX_", prefix)
@@ -277,7 +278,7 @@ def ping_file_for_realms_list(settings, context, lrealms, svars, path_special, d
             out.write('</field_group>\n')
         fp.write("</field_definition>\n")
         #
-        print("%3d variables written for %s" % (len(lvars), filename))
+        logger.info("%3d variables written for %s" % (len(lvars), filename))
         #
         # Write axis_defs, domain_defs, ... read from relevant input/DX_ files
         if path_special:
@@ -314,6 +315,7 @@ def highest_rank(svar):
     This, assuming dr2xml would handle all needed shape reductions
     """
     # mipvarlabel=svar.label_without_area
+    logger = get_logger()
     mipvarlabel = svar.label_without_psuffix
     shapes = []
     altdims = set()
@@ -327,16 +329,16 @@ def highest_rank(svar):
                     shape = sp.label
                 except:
                     if print_DR_errors:
-                        print("DR Error: issue with spid for " + st.label + " " + v.label + str(cvar.mipTable))
+                        logger.error("DR Error: issue with spid for " + st.label + " " + v.label + str(cvar.mipTable))
                     # One known case in DR 1.0.2: hus in 6hPlev
                     shape = "XY"
                 if "odims" in st.__dict__:
                     try:
                         map(altdims.add, st.odims.split("|"))
                     except:
-                        print("Issue with odims for " + v.label + " st=" + st.label)
+                        logger.error("Issue with odims for " + v.label + " st=" + st.label)
             except:
-                print("DR Error: issue with stid for :" + v.label + " in table section :" + str(cvar.mipTableSection))
+                logger.error("DR Error: issue with stid for :" + v.label + " in table section :" + str(cvar.mipTableSection))
                 shape = "?st"
         else:
             # Pour recuperer le spatial_shp pour le cas de variables qui n'ont
@@ -414,6 +416,7 @@ def copy_obj_from_DX_file(fp, obj, prefix, lrealms, path_special):
     Insert content of DX_<obj>_defs files (changing prefix)
     """
     # print "copying %s defs :"%obj,
+    logger = get_logger()
     subrealms_seen = []
     for realm in lrealms:
         for subrealm in realm.split():
@@ -432,8 +435,7 @@ def copy_obj_from_DX_file(fp, obj, prefix, lrealms, path_special):
                             fp.write(line.replace("DX_", prefix))
                     fp.write("</%s_definition>\n" % obj)
             else:
-                pass
-                print(" no file :%s " % defs)
+                logger.info(" no file :%s " % defs)
 
 
 def DX_defs_filename(obj, realm, path_special):
@@ -450,6 +452,7 @@ def check_for_file_input(sv, hgrid, pingvars, field_defs, grid_defs, domain_defs
 
     Add an entry in pingvars
     """
+    logger = get_logger()
     externs = get_variable_from_lset_with_default('fx_from_file', [])
     # print "/// sv.label=%s"%sv.label, sv.label in externs ,"hgrid=",hgrid
     if sv.label in externs and \
@@ -474,9 +477,9 @@ def check_for_file_input(sv, hgrid, pingvars, field_defs, grid_defs, domain_defs
         create_xml_sub_element(xml_element=remap_grid_def, tag="domain", attrib=OrderedDict(domain_ref=file_domain_id))
         grid_defs[file_grid_id] = remap_grid_def
         if printout:
-            print(create_string_from_xml_element(domain_defs[file_domain_id]))
+            logger.info(create_string_from_xml_element(domain_defs[file_domain_id]))
         if printout:
-            print(create_string_from_xml_element(grid_defs[file_grid_id]))
+            logger.info(create_string_from_xml_element(grid_defs[file_grid_id]))
 
         # Create xml for reading the variable
         filename = externs[sv.label][hgrid][get_grid_choice()]
@@ -516,5 +519,5 @@ def check_for_file_input(sv, hgrid, pingvars, field_defs, grid_defs, domain_defs
         context_index[pingvar] = field_def
 
         if printout:
-            print(create_string_from_xml_element(field_defs[field_in_file_id]))
+            logger.info(create_string_from_xml_element(field_defs[field_in_file_id]))
         #

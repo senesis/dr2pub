@@ -17,6 +17,9 @@ import six
 # Utilities
 from utils import Dr2xmlError
 
+# Logger
+from logger import get_logger
+
 # Global variables and configuration tools
 from config import get_config_variable
 
@@ -65,13 +68,14 @@ def guess_simple_domain_grid_def(grid_id):
     just a domain, from the grid_id, using a regexp with a numbered group that matches
     domain_name in grid_id. Second item is group number
     """
+    logger = get_logger()
     regexp = get_variable_from_lset_without_default("simple_domain_grid_regexp")
     domain_id, n = re.subn(regexp[0], r'\%d' % regexp[1], grid_id)
     if n != 1:
         raise Dr2xmlError("Cannot identify domain name in grid_id %s using regexp %s" % (grid_id, regexp[0]))
     grid_def = create_xml_element(tag="grid", attrib=OrderedDict(id=grid_id))
     create_xml_sub_element(xml_element=grid_def, tag="domain", attrib=OrderedDict(domain_ref=domain_id))
-    print("Warning: Guess that structure for grid %s is : %s" % (grid_id, grid_def))
+    logger.warning("Warning: Guess that structure for grid %s is : %s" % (grid_id, grid_def))
     # raise dr2xml_error("Warning: Guess that structure for grid %s is : %s"%(grid_id,grid_def))
     return grid_def
 
@@ -129,6 +133,7 @@ def create_axis_def(sdim, axis_defs, field_defs):
     defining the zoom in XIOS syntax
 
     """
+    logger = get_logger()
     prefix = get_variable_from_lset_without_default("ping_variables_prefix")
     # nbre de valeurs de l'axe determine aussi si on est en dim singleton
     if sdim.requested:
@@ -151,7 +156,7 @@ def create_axis_def(sdim, axis_defs, field_defs):
             axis_dict["value"] = "(0,{})[ {} ]".format(n_glo - 1, sdim.requested)
         else:
             if n_glo != 1:
-                print("Warning: axis for %s is singleton but has %d values" % (sdim.label, n_glo))
+                logger.warning("Warning: axis for %s is singleton but has %d values" % (sdim.label, n_glo))
                 return None
             # Singleton case (degenerated vertical dimension)
             axis_dict["n_glo"] = str(n_glo)
@@ -218,8 +223,7 @@ def create_axis_def(sdim, axis_defs, field_defs):
     return axis_xml
 
 
-def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=None, turn_into_axis=False,
-                          printout=False):
+def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=None, turn_into_axis=False):
     """
     Provided with a grid id SRC_GRID_ID or alternatively a variable name (ALIAS),
     (SRC_GRID)
@@ -578,7 +582,7 @@ def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_ax
         scalar_dict["name"] = scalar_name
         create_xml_sub_element(xml_element=rep, tag="scalar", attrib=scalar_dict)
     else:
-        raise dr2xml_error("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
+        raise Dr2xmlError("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
     # Remove any axis if asked for
     if remove_axis:
         remove_subelement_in_xml_element(xml_element=rep, tag="axis")
