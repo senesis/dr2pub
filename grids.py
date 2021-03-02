@@ -7,12 +7,10 @@ Grids general tools.
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-from six import string_types
 from functools import reduce
 from collections import OrderedDict
 
 import re
-import six
 
 # Utilities
 from utils import Dr2xmlError
@@ -29,11 +27,14 @@ from settings_interface import get_variable_from_lset_without_default, get_varia
 # Interface to Data Request
 from dr_interface import get_collection, get_uid
 # Interface to xml tools
-from xml_interface import create_string_from_xml_element, create_xml_element, create_xml_sub_element, \
-    remove_subelement_in_xml_element
+from xml_interface import remove_subelement_in_xml_element
 
 # CFsites tools
 from cfsites import cfsites_grid_id, add_cfsites_in_defs, cfsites_domain_id
+
+# Project tools
+from projects import DR2XMLGrid, DR2XMLDomain, DR2XMLAxis, DR2XMLField, DR2XMLInterpolateAxis, DR2XMLZoomAxis, \
+    DR2XMLGenerateRectilinearDomain, DR2XMLInterpolateDomain, DR2XMLScalar
 
 
 # Next variable is used to circumvent an Xios 1270 shortcoming. Xios
@@ -47,8 +48,6 @@ def get_grid_def(grid_id, grid_defs):
     Get the grid definition corresponding to grid_id from the context_index or the list of grid definitions.
     """
     context_index = get_config_variable("context_index")
-    # print("<<<DEBUG>>> grid_id, grid_id in grid_defs, grid_id in context_index", grid_id, grid_id in grid_defs,
-    #       grid_id in context_index)
     if grid_id in grid_defs:
         # Simple case : already stored
         grid_def = grid_defs[grid_id]
@@ -58,7 +57,6 @@ def get_grid_def(grid_id, grid_defs):
             grid_def = context_index[grid_id]
         else:
             raise Dr2xmlError("Cannot guess a grid def for %s" % grid_id)
-            grid_def = None
     return grid_def
 
 
@@ -73,8 +71,8 @@ def guess_simple_domain_grid_def(grid_id):
     domain_id, n = re.subn(regexp[0], r'\%d' % regexp[1], grid_id)
     if n != 1:
         raise Dr2xmlError("Cannot identify domain name in grid_id %s using regexp %s" % (grid_id, regexp[0]))
-    grid_def = create_xml_element(tag="grid", attrib=OrderedDict(id=grid_id))
-    create_xml_sub_element(xml_element=grid_def, tag="domain", attrib=OrderedDict(domain_ref=domain_id))
+    grid_def = DR2XMLGrid(id=grid_id)
+    grid_def.append(DR2XMLDomain(domain_ref=domain_id))
     logger.warning("Warning: Guess that structure for grid %s is : %s" % (grid_id, grid_def))
     # raise dr2xml_error("Warning: Guess that structure for grid %s is : %s"%(grid_id,grid_def))
     return grid_def
@@ -110,8 +108,7 @@ def create_grid_def(grid_defs, axis_def, axis_name, src_grid_id):
         else:
             target_grid_def.append(grid_child)
     if not is_axis_changed:
-        raise Dr2xmlError("Fatal: cannot find an axis ref in grid %s : %s " %
-                          (src_grid_id, create_string_from_xml_element(src_grid_def)))
+        raise Dr2xmlError("Fatal: cannot find an axis ref in grid %s : %s " % (src_grid_id, src_grid_def))
     target_grid_def.attrib["id"] = target_grid_id
     grid_defs[target_grid_id] = target_grid_def
     return target_grid_id
@@ -146,78 +143,50 @@ def create_axis_def(sdim, axis_defs, field_defs):
 
     if not sdim.is_zoom_of:  # pure interpolation
         # Axis is not a zoom of another, write axis_def normally (with value, interpolate_axis,etc.)
-        axis_dict = OrderedDict()
-        axis_dict["id"] = sdim.label
-        if sdim.positive not in [None, ""]:
-            axis_dict['positive'] = sdim.positive
         if n_glo > 1:
             # Case of a non-degenerated vertical dimension (not a singleton)
-            axis_dict["n_glo"] = str(n_glo)
-            axis_dict["value"] = "(0,{})[ {} ]".format(n_glo - 1, sdim.requested)
+            value = "(0,{})[ {} ]".format(n_glo - 1, sdim.requested)
+        elif n_glo != 1:
+            logger.warning("Warning: axis for %s is singleton but has %d values" % (sdim.label, n_glo))
+            return None
         else:
-            if n_glo != 1:
-                logger.warning("Warning: axis for %s is singleton but has %d values" % (sdim.label, n_glo))
-                return None
             # Singleton case (degenerated vertical dimension)
-            axis_dict["n_glo"] = str(n_glo)
-            axis_dict["value"] = '(0,0)[ {} ]'.format(sdim.value)
-        axis_dict['name'] = sdim.out_name
-        axis_dict["standard_name"] = sdim.stdname
-        axis_dict["long_name"] = sdim.long_name
-        axis_dict["unit"] = sdim.units
-        if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
-            axis_dict["axis_type"] = sdim.axis
-        axis_xml = create_xml_element(tag="axis", attrib=axis_dict)
+            value = '(0,0)[ {} ]'.format(sdim.value)
+        axis_xml = DR2XMLAxis(id=sdim.label, name=sdim.out_name, standard_name=sdim.stdname, long_name=sdim.long_name,
+                              unit=sdim.units, positive=sdim.positive, axis_type=sdim.axis, n_glo=str(n_glo),
+                              value=value)
         # Define some other values
-        if sdim.stdname == "air_pressure":
+        if sdim.stdname in ["air_pressure", ]:
             coordname = prefix + "pfull"
-        if sdim.stdname == "altitude":
+        if sdim.stdname in ["altitude", ]:
             coordname = prefix + "zg"
         #
         # Create an intermediate field for coordinate , just adding time sampling
         operation = get_variable_from_lset_with_default("vertical_interpolation_operation", "instant")
         coordname_with_op = coordname + "_" + operation  # e.g. CMIP6_pfull_instant
-        coorddef_op_dict = OrderedDict()
-        coorddef_op_dict["id"] = coordname_with_op
-        coorddef_op_dict["field_ref"] = coordname
-        coorddef_op_dict["operation"] = operation
-        coorddef_op_dict["detect_missing_value"] = "true"
-        coorddef_op = create_xml_element(tag="field", attrib=coorddef_op_dict)
+        coorddef_op = DR2XMLField(id=coordname_with_op, field_ref=coordname, operation=operation,
+                                  detect_missing_value="true")
         field_defs[coordname_with_op] = coorddef_op
         #
         # Create and store a definition for time-sampled field for the vertical coordinate
         vert_frequency = get_variable_from_lset_without_default("vertical_interpolation_sample_freq")
         coordname_sampled = coordname_with_op + "_sampled_" + vert_frequency  # e.g. CMIP6_pfull_instant_sampled_3h
-        interpolate_axis_dict = OrderedDict()
-        interpolate_axis_dict["type"] = "polynomial"
-        interpolate_axis_dict["order"] = "1"
-        interpolate_axis_dict["coordinate"] = coordname_sampled
-        create_xml_sub_element(xml_element=axis_xml, tag="interpolate_axis", attrib=interpolate_axis_dict)
+        axis_xml.append(DR2XMLInterpolateAxis(type="polynomial", order="1", coordinate=coordname_sampled))
         # Store definition for the new axis
         axis_defs[sdim.label] = axis_xml
-        coorddef_dict = OrderedDict()
-        coorddef_dict["id"] = coordname_sampled
-        coorddef_dict["field_ref"] = coordname_with_op
-        coorddef_dict["freq_op"] = vert_frequency
-        coorddef_dict["detect_missing_value"] = "true"
-        coorddef = create_xml_element(tag="field", text="@{}".format(coordname), attrib=coorddef_dict)
+        coorddef = DR2XMLField(id=coordname_sampled, field_ref=coordname_with_op, freq_op=vert_frequency,
+                               detect_missing_value="true", text="@{}".format(coordname))
         field_defs[coordname_sampled] = coorddef
     else:  # zoom case
         # Axis is subset of another, write it as a zoom_axis
-        axis_dict = OrderedDict()
-        axis_dict["id"] = sdim.zoom_label
-        axis_dict["axis_ref"] = sdim.zoom_of
-        axis_dict["name"] = "plev"
-        if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
-            axis_dict["axis_type"] = sdim.axis
-        axis_xml = create_xml_element(tag="axis", attrib=axis_dict)
+        axis_xml = DR2XMLAxis(id=sdim.zoom_label, axis_ref=sdim.zoom_of, name="plev", axis_type=sdim.axis)
         values = re.sub(r'.*\[ *(.*) *\].*', r'\1', axis_defs[sdim.is_zoom_of].attrib["value"])
         values = values.split("\n")[0]
         union_vals = values.strip(" ").split()
         union_vals_num = [float(v) for v in union_vals]
         index_values = "(0, {})[ {} ]".format(n_glo - 1,
                                               " ".join([str(union_vals_num.index(val)) for val in glo_list_num]))
-        create_xml_sub_element(xml_element=axis_xml, tag="zoom_axis", attrib=OrderedDict(index=index_values))
+        axis_xml.append(DR2XMLZoomAxis(index_values=index_values))
         # Store definition for the new axis
         axis_defs[sdim.zoom_label] = axis_xml
     return axis_xml
@@ -314,16 +283,15 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
             aliases[sector] = sector
 
     for sub in grid_def:
-        if sub.tag == 'axis':
+        if sub.tag in ['axis', ]:
             # print "checking grid %s"%grid_def
             if 'axis_ref' not in sub.attrib:
                 # Definitely don't want to change an unnamed axis. Such an axis is
                 # generated by vertical interpolation
-                if any([ssub.tag == 'interpolate_axis' for ssub in sub]):
+                if any([ssub.tag in ['interpolate_axis', ] for ssub in sub]):
                     continue
                 else:
-                    print("Cannot normalize an axis in grid %s : no axis_ref for axis %s" %
-                          (grid_id, create_string_from_xml_element(sub)))
+                    print("Cannot normalize an axis in grid %s : no axis_ref for axis %s" % (grid_id, sub))
                     continue
                     # raise dr2xml_error("Grid %s has an axis without axis_ref : %s"%(grid_id,grid_def))
             axis_ref = sub.attrib['axis_ref']
@@ -347,7 +315,7 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
                 raise Dr2xmlError("Value %s in 'non_standard_axes' is not a DR dimension id" % dr_axis_id)
             dim = get_uid(dim_id)
             # We don't process scalars here
-            if dim.value == '' or dim.label == "scatratio":
+            if dim.value in ['', ] or dim.label in ["scatratio", ]:
                 axis_id, axis_name = create_axis_from_dim(dim, alt_labels, axis_ref, axis_defs)
                 # cannot use ET library which does not guarantee the ordering of axes
                 axes_to_change.append((axis_ref, axis_id, axis_name))
@@ -360,7 +328,8 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
     for (rank, grid_child) in enumerate(grid_def):
         axes_to_change_new = list()
         for old, new, name in axes_to_change:
-            if grid_child.tag == "axis" and "axis_ref" in grid_child.attrib and grid_child.attrib["axis_ref"] == old:
+            if grid_child.tag in ["axis", ] and "axis_ref" in grid_child.attrib and \
+                    grid_child.attrib["axis_ref"] == old:
                 axis_count += 1
                 grid_def_dict = OrderedDict()
                 grid_def_dict["axis_ref"] = new
@@ -388,33 +357,22 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
     if axis_id in axis_defs:
         return axis_id, axis_name
 
-    rep_dict = OrderedDict()
-    rep_dict["id"] = axis_id
-    rep_dict["name"] = axis_name
-    rep_dict["axis_ref"] = axis_ref
-    if isinstance(dim.standardName, string_types):
-        rep_dict["standard_name"] = dim.standardName
-    rep_dict["long_name"] = dim.title
     #
-    if dim.type == "double":
-        rep_dict["prec"] = '8'
-    elif dim.type in ["integer", "int"]:
-        rep_dict["prec"] = '2'
-    elif dim.type == "float":
-        rep_dict["prec"] = '4'
-    #
-    if dim.units != '':
-        rep_dict["unit"] = dim.units
-    if dim.type != "character":
+    prec_dict = dict(double="8", integer="2", int="2", prec="4")
+    value = None
+    bounds = None
+    dim_name = None
+    label = None
+    if dim.type not in ["character", ]:
         if dim.requested != "":
             nb = len(dim.requested.split())
-            rep_dict["value"] = "(0,{})[ {} ]".format(nb, dim.requested.strip())
+            value = "(0,{})[ {} ]".format(nb, dim.requested.strip())
         if isinstance(dim.boundsRequested, list):
             vals = " ".join([str(v) for v in dim.boundsRequested])
             valsr = reduce(lambda x, y: x + y, vals)
-            rep_dict["bounds"] = "(0,1)x(0,{})[ {} ]".format(nb - 1, valsr)
+            bounds = "(0,1)x(0,{})[ {} ]".format(nb - 1, valsr)
     else:
-        rep_dict["dim_name"] = dim.altLabel
+        dim_name = dim.altLabel
         if labels is None:
             labels = dim.requested
         if dim.label == "oline" and get_variable_from_lset_with_default('add_Gibraltar', False):
@@ -426,10 +384,10 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
         for s in labels.split():
             strings += "%s " % s
         if length > 0:
-            rep_dict["label"] = "(0,{})[ {} ]".format(length - 1, strings)
-    if isinstance(dim.axis, six.string_types) and len(dim.axis) > 0:
-        rep_dict["axis_type"] = dim.axis
-    rep = create_xml_element(tag="axis", attrib=rep_dict)
+            label = "(0,{})[ {} ]".format(length - 1, strings)
+    rep = DR2XMLAxis(id=axis_id, name=axis_name, axis_ref=axis_ref, standard_name=dim.standardName,
+                     long_name=dim.title, prec=prec_dict.get(dim.type), unit=dim.units, value=value, bounds=bounds,
+                     dim_name=dim_name, label=label, axis_type=dim.axis)
     axis_defs[axis_id] = rep
     # print "new DR_axis :  %s "%rep
     return axis_id, axis_name
@@ -454,7 +412,7 @@ def scalar_vertical_dimension(sv):
     """
     if 'cids' in sv.struct.__dict__:
         cid = get_uid(sv.struct.cids[0])
-        if cid.axis == 'Z':
+        if cid.axis in ['Z', ]:
             return cid.altLabel
     return None
 
@@ -467,17 +425,17 @@ def create_output_grid(ssh, grid_defs, domain_defs, target_hgrid_id, margs):
     grid_ref = None
 
     # Compute domain name, define it if needed
-    if ssh[0:2] == 'Y-':  # zonal mean and atm zonal mean on pressure levels
+    if ssh[0:2] in ['Y-', ]:  # zonal mean and atm zonal mean on pressure levels
         # Grid normally has already been created upstream
         grid_ref = margs['src_grid_id']
-    elif ssh == 'S-na':
+    elif ssh in ['S-na', ]:
         # COSP sites. Input field may have a singleton dimension (XIOS scalar component)
         grid_ref = cfsites_grid_id
         add_cfsites_in_defs(grid_defs, domain_defs)
         #
-    elif ssh[0:3] == 'XY-' or ssh[0:3] == 'S-A':
+    elif ssh[0:3] in ['XY-', 'S-A']:
         # this includes 'XY-AH' and 'S-AH' : model half-levels
-        if ssh[0:3] == 'S-A':
+        if ssh[0:3] in ['S-A', ]:
             add_cfsites_in_defs(grid_defs, domain_defs)
             target_hgrid_id = cfsites_domain_id
         if target_hgrid_id:
@@ -486,13 +444,13 @@ def create_output_grid(ssh, grid_defs, domain_defs, target_hgrid_id, margs):
             grid_ref = change_domain_in_grid(target_hgrid_id, grid_defs)
             if grid_ref is False or grid_ref is None:
                 raise Dr2xmlError("Fatal: cannot create grid_def for %s with hgrid=%s" % (alias, target_hgrid_id))
-    elif ssh == 'TR-na' or ssh == 'TRS-na':  # transects,   oce or SI
+    elif ssh in ['TR-na', 'TRS-na']:  # transects,   oce or SI
         pass
-    elif ssh[0:3] == 'YB-':  # basin zonal mean or section
+    elif ssh[0:3] in ['YB-', ]:  # basin zonal mean or section
         pass
-    elif ssh == 'na-na':  # TBD ? global means or constants - spatial integration is not handled
+    elif ssh in ['na-na', ]:  # TBD ? global means or constants - spatial integration is not handled
         pass
-    elif ssh == 'na-A':  # only used for rlu, rsd, rsu ... in Efx ????
+    elif ssh in ['na-A', ]:  # only used for rlu, rsd, rsu ... in Efx ????
         pass
     else:
         raise Dr2xmlError(
@@ -518,20 +476,9 @@ def create_standard_domain(resol, ni, nj):
     """
     Create a xml like string corresponding to the domain using resol, ni and nj.
     """
-    domain_dict = OrderedDict()
-    domain_dict["id"] = "CMIP6_{}".format(resol)
-    domain_dict["ni_glo"] = str(ni)
-    domain_dict["nj_glo"] = str(nj)
-    domain_dict["type"] = "rectilinear"
-    domain_dict["prec"] = "8"
-    rep = create_xml_element(tag="domain", attrib=domain_dict)
-    create_xml_sub_element(xml_element=rep, tag="generate_rectilinear_domain")
-    interpolate_domain_dict = OrderedDict()
-    interpolate_domain_dict["order"] = "1"
-    interpolate_domain_dict["renormalize"] = "true"
-    interpolate_domain_dict["mode"] = "read_or_compute"
-    interpolate_domain_dict["write_weight"] = "true"
-    create_xml_sub_element(xml_element=rep, tag="interpolate_domain", attrib=interpolate_domain_dict)
+    rep = DR2XMLDomain(id="CMIP6_{}".format(resol), ni_glo=str(ni), nj_glo=str(nj), type="rectilinear", prec="8")
+    rep.append(DR2XMLGenerateRectilinearDomain())
+    rep.append(DR2XMLInterpolateDomain(order="1", renormalize="true", mode="read_or_compute", write_weight="true"))
     return rep
 
 
@@ -554,8 +501,8 @@ def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_ax
     rep = gridin_def.copy()
     test_scalar_in_grid = False
     for child in rep:
-        if child.tag == "scalar":
-            if "scalar_ref" in child.attrib and child.attrib["scalar_ref"] == scalar_id:
+        if child.tag in ["scalar", ]:
+            if "scalar_ref" in child.attrib and child.attrib["scalar_ref"] in [scalar_id, ]:
                 test_scalar_in_grid = True
     if test_scalar_in_grid:
         return rep
@@ -566,10 +513,9 @@ def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_ax
         children_to_remove = list()
         for child in rep:
             test_child = False
-            if child.tag == "scalar":
-                for scalar_child in child:
-                    if scalar_child.tag == "extract_axis":
-                        test_child = True
+            if child.tag in ["scalar", ]:
+                if any([scalar_child.tag in ["extract_axis", ] for scalar_child in child]):
+                    test_child = True
             if test_child:
                 count += 1
                 children_to_remove.append(child)
@@ -577,10 +523,7 @@ def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_ax
             rep.remove(child_to_remove)
     if "id" in rep.attrib:
         rep.attrib["id"] = gridout_id
-        scalar_dict = OrderedDict()
-        scalar_dict["scalar_ref"] = scalar_id
-        scalar_dict["name"] = scalar_name
-        create_xml_sub_element(xml_element=rep, tag="scalar", attrib=scalar_dict)
+        rep.append(DR2XMLScalar(scalar_ref=scalar_id, name=scalar_name))
     else:
         raise Dr2xmlError("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
     # Remove any axis if asked for

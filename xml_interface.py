@@ -49,15 +49,6 @@ def create_xml_element_from_string(string):
     return xml_writer.parse_xml_string_rewrite(string)
 
 
-def create_string_from_xml_element(xml_element):
-    """
-
-    :param xml_element:
-    :return:
-    """
-    return xml_element.dump()
-
-
 def create_xml_comment(text):
     """
 
@@ -75,15 +66,6 @@ def add_xml_comment_to_element(element, text):
     :return:
     """
     element.append(create_xml_comment(text))
-
-
-def dump_xml_element(xml_element):
-    """
-
-    :param xml_element:
-    :return:
-    """
-    return xml_element.dump()
 
 
 def parse_xml_file(xml_file):
@@ -105,24 +87,13 @@ def get_root_of_xml_file(xml_file):
     return root_element
 
 
-def create_xml_string(tag, attrib=OrderedDict(), text=None):
-    """
-
-    :param tag:
-    :param attrib:
-    :param text:
-    :return:
-    """
-    return create_string_from_xml_element(create_xml_element(tag=tag, attrib=attrib, text=text))
-
-
 def create_pretty_string_from_xml_element(xml_element):
     """
 
     :param xml_element:
     :return:
     """
-    xml_str = create_string_from_xml_element(xml_element)
+    xml_str = str(xml_element)
     reparsed = minidom.parseString(xml_str)
     return reparsed.toprettyxml(indent="\t", newl="\n", encoding="utf-8")
 
@@ -179,3 +150,53 @@ def remove_subelement_in_xml_element(xml_element, tag=None, attrib=OrderedDict()
     for child_to_remove in children_to_remove:
         xml_element.remove(child_to_remove)
     return xml_element
+
+
+class DR2XMLElement(xml_writer.Element):
+
+    tag = None
+    text = None
+    dict_values = dict()
+    attrs_list = list()
+    attrs_skip_values = dict()
+    attrs_default_values = dict()
+    fatal_missing_attr = True
+
+    def __init__(self, **kwargs):
+        self.text = kwargs.pop("text", self.text)
+        self.populate_attrs_default_values()
+        self.populate_attrs_skip_values()
+        self.populate_values(**kwargs)
+        attrs_dict = self.create_attrs_dict()
+        super(DR2XMLElement, self).__init__(tag=self.tag, text=self.text, attrib=attrs_dict)
+
+    def populate_attrs_default_values(self):
+        self.attrs_default_values = dict()
+
+    def populate_attrs_skip_values(self):
+        self.attrs_skip_values = dict()
+
+    def populate_values(self, **kwargs):
+        self.dict_values = dict()
+        for attr in self.attrs_list:
+            if attr in kwargs:
+                self.dict_values[attr] = kwargs[attr]
+            elif attr in self.attrs_default_values:
+                self.dict_values[attr] = self.attrs_default_values[attr]
+
+    def create_attrs_dict(self):
+        attrs_dict = OrderedDict()
+        for attr in self.attrs_list:
+            value_not_set = False
+            if attr in self.dict_values:
+                value = self.dict_values[attr]
+            elif attr in self.attrs_default_values:
+                value = self.attrs_default_values[attr]
+            elif self.fatal_missing_attr:
+                raise KeyError("Could not find a value for attribute %s" % attr)
+            else:
+                value_not_set = True
+            if not value_not_set and (attr not in self.attrs_skip_values or
+                                      (attr in self.attrs_skip_values and value not in self.attrs_skip_values[attr])):
+                attrs_dict[attr] = value
+        return attrs_dict

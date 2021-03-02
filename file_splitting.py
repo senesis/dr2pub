@@ -136,7 +136,7 @@ def split_frequency_for_variable(svar, grid, mcfg, context):
             # Try by years first
             size_per_year = size * timesteps_per_freq_and_duration(freq, 365, sts)
             nbyears = max_size / float(size_per_year)
-            logger.info("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
+            logger.debug("size per year=%s, size=%s, nbyears=%g" % (repr(size_per_year), repr(size), nbyears))
             if nbyears > 1.:
                 if nbyears > 500:
                     return "500y"
@@ -176,7 +176,7 @@ def split_frequency_for_variable(svar, grid, mcfg, context):
                         return "1d"
                     else:
                         raise Dr2xmlGridError("No way to put even a single day of data in %g for frequency %s, var %s,"
-                                                 " table %s" % (max_size, freq, svar.label, svar.mipTable))
+                                              " table %s" % (max_size, freq, svar.label, svar.mipTable))
         else:
             raise Dr2xmlGridError(
                 "Warning: field_size returns 0 for var %s, cannot compute split frequency." % svar.label)

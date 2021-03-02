@@ -47,19 +47,18 @@ def get_spatial_and_temporal_shapes(cmvar):
     temporal_shape = False
     if cmvar.stid == "__struct_not_found_001__":
         if print_DR_errors:
-            logger.warning("Warning: stid for ", cmvar.label, " in table ", cmvar.mipTable,
-                           " is a broken link to structure in DR: ", cmvar.stid)
+            logger.warning("Warning: stid for %s in table %s is a broken link to structure in DR: %s" %
+                           (cmvar.label, cmvar.mipTable, cmvar.stid))
     else:
         struct = get_uid(cmvar.stid)
         spatial_shape = get_uid(struct.spid).label
         temporal_shape = get_uid(struct.tmid).label
     if print_DR_errors:
         if not spatial_shape:
-            logger.warning("Warning: spatial shape for ", cmvar.label, " in table ", cmvar.mipTable,
-                           " not found in DR.")
+            logger.warning("Warning: spatial shape for %s in table %s not found in DR." % (cmvar.label, cmvar.mipTable))
         if not temporal_shape:
-            logger.warning("Warning: temporal shape for ", cmvar.label, " in table ", cmvar.mipTable,
-                           " not found in DR.")
+            logger.warning("Warning: temporal shape for %s in table %s not found in DR." %
+                           (cmvar.label, cmvar.mipTable))
     return [spatial_shape, temporal_shape]
 
 
@@ -127,7 +126,7 @@ def analyze_ambiguous_mip_varnames(debug=[]):
             logger.debug(v)
             b, d = p
             for r in d:
-                logger.debug("\t", r, d[r])
+                logger.debug("\t %s %s" % (r, d[r]))
     return ambiguous
 
 

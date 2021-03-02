@@ -53,7 +53,7 @@ def create_xios_axis_and_grids_for_plevs_unions(svars, plev_sfxs, dummies, axis_
     dict_plevs = OrderedDict()
     for sv in svars:
         if not sv.modeling_realm:
-            logger.warning("Warning: no modeling_realm associated to:", sv.label, sv.mipTable, sv.mip_era)
+            logger.warning("Warning: no modeling_realm associated to: %s %s %s" % (sv.label, sv.mipTable, sv.mip_era))
         for sd in sv.sdims.values():
             # couvre les dimensions verticales de type 'plev7h' ou 'p850'
             if sd.label.startswith("p") and any(sd.label.endswith(s) for s in plev_sfxs) and sd.label != 'pl700':
@@ -78,8 +78,8 @@ def create_xios_axis_and_grids_for_plevs_unions(svars, plev_sfxs, dummies, axis_
                                     # TBS# print sv.label,"in table",sv.mipTable,"already listed for",sd.label
                                     pass
                     else:
-                        logger.info("Info: ", lwps, "not taken into account for building plevs union axis because ",
-                                    prefix + lwps,)
+                        logger.info("Info: %s not taken into account for building plevs union axis because %s" %
+                                    (lwps, prefix + lwps))
                         if not present_in_ping:
                             logger.info("is not an entry in the pingfile")
                         else:
@@ -90,8 +90,8 @@ def create_xios_axis_and_grids_for_plevs_unions(svars, plev_sfxs, dummies, axis_
                     # or pXX_<lwps> (single pressure level)
                     sv.sdims[sd.label].zoom_label = 'zoom_' + sd.label + "_" + lwps
                 else:
-                    logger.warning("Warning: dim is pressure but label_without_psuffix=", lwps,
-                                   "for", sv.label, sv.mipTable, sv.mip_era)
+                    logger.warning("Warning: dim is pressure but label_without_psuffix=%s for %s %s %s" %
+                                   (lwps, sv.label, sv.mipTable, sv.mip_era))
             # else :
             #    print "for var %s/%s, dim %s is not related to pressure"%(sv.label,sv.label_without_psuffix,sd.label)
     #
@@ -131,18 +131,18 @@ def create_xios_axis_and_grids_for_plevs_unions(svars, plev_sfxs, dummies, axis_
                         plev_values = set(sdsv.value.split())
                         sdim_union.is_union_for.append(sv.label + "_" + sd.label)
                     else:
-                        logger.warning("Warning: No requested nor value found for", svar.label,
-                                       "with vertical dimesion", plev)
+                        logger.warning("Warning: No requested nor value found for %s with vertical dimension %s"
+                                       % (svar.label, plev))
                     plevs_union = plevs_union.union(plev_values)
-                    logger.debug("    -- on", plev, ":", plev_values)
-                logger.debug("       *", sv.label, "(", sv.mipTable, ")")
+                    logger.debug("    -- on %s : %s" % (plev, plev_values))
+                logger.debug("       * %s (%s)" % (sv.label, sv.mipTable))
         list_plevs_union = list(plevs_union)
         list_plevs_union_num = [float(lev) for lev in list_plevs_union]
         list_plevs_union_num.sort(reverse=True)
         list_plevs_union = [str(lev) for lev in list_plevs_union_num]
         for lev in list_plevs_union:
             plevs_union_xios += " " + lev
-        logger.debug(">>> XIOS plevs union:", plevs_union_xios)
+        logger.debug(">>> XIOS plevs union: %s" % plevs_union_xios)
         sdim_union.label = "union_plevs_" + lwps
         if len(list_plevs_union) > 1:
             sdim_union.requested = plevs_union_xios

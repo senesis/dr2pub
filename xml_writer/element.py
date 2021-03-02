@@ -298,4 +298,7 @@ def is_xml_element(element):
     :param element:
     :return:
     """
-    return isinstance(element, (Beacon, Element, Comment, Header))
+    try:
+        return element.is_xml_element()
+    except:
+        return False

@@ -180,3 +180,6 @@ class Beacon(object):
         """
         if self.level != new_level:
             self.level = new_level
+
+    def is_xml_element(self):
+        return True

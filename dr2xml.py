@@ -66,7 +66,7 @@ from utils import print_struct
 from logger import initialize_logger, get_logger, change_log_level
 
 # Global variables and configuration tools
-from config import get_config_variable, set_config_variable, python_version, initialize_config_variables
+from config import get_config_variable, set_config_variable, initialize_config_variables
 
 # Interface to settings dictionaries
 from settings_interface import initialize_dict, get_variable_from_lset_with_default, \
@@ -74,23 +74,6 @@ from settings_interface import initialize_dict, get_variable_from_lset_with_defa
 
 # Interface to Data Request
 from dr_interface import get_DR_version, get_uid, get_request_by_id_by_sect
-
-# Tools to deal with ping files
-from pingfiles_interface import read_pingfiles_variables
-
-# Tools to deal with computation of used pressure levels
-from plevs_unions import create_xios_axis_and_grids_for_plevs_unions
-
-# Variables tools
-from vars_home import multi_plev_suffixes, single_plev_suffixes
-from vars_selection import initialize_sn_issues, select_variables_to_be_processed
-
-# XIOS reading and writing tools
-from Xparse import init_context
-from Xwrite import write_xios_file_def
-
-# Info printing tools
-from infos import print_some_stats
 
 
 print("\n", 50 * "*", "\n*")
@@ -597,11 +580,10 @@ example_simulation_settings = {
 
 def generate_file_defs(lset, sset, year, enddate, context, cvs_path, pingfiles=None,
                        dummies='include', printout=False, dirname="./", prefix="", attributes=list(),
-                       select="on_expt_and_year"):
+                       select="on_expt_and_year", debug=False):
     """
     A wrapper for profiling top-level function : generate_file_defs_inner
     """
-    debug = False
     if debug:
         default_level = "debug"
     elif printout:
@@ -670,6 +652,23 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     :return: An output file named dirname/filedefs_context.xml. It has a CMIP6 compliant name, with prepended prefix.
 
     """
+    # Tools to deal with ping files
+    from pingfiles_interface import read_pingfiles_variables
+
+    # Tools to deal with computation of used pressure levels
+    from plevs_unions import create_xios_axis_and_grids_for_plevs_unions
+
+    # Variables tools
+    from vars_home import multi_plev_suffixes, single_plev_suffixes
+    from vars_selection import initialize_sn_issues, select_variables_to_be_processed
+
+    # XIOS reading and writing tools
+    from Xparse import init_context
+    from Xwrite import write_xios_file_def
+
+    # Info printing tools
+    from infos import print_some_stats
+
     logger = get_logger()
     #
     cmvk = "CMIP6_CV_version"
@@ -754,11 +753,12 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
     if len(warn) > 0:
         logger.warning("\nWarnings about cell methods (with var list)")
         for w in warn:
-            logger.warning("\t", w, " for vars : ", print_struct(warn[w]))
+            logger.warning("\t%s for vars : %s" % (w, print_struct(warn[w])))
     if len(warnings_for_optimisation) > 0:
-        logger.warning("Warning for fields which cannot be optimised (i.e. average before remap) because of an expr with @\n\t",)
+        logger.warning("Warning for fields which cannot be optimised (i.e. average before remap)"
+                       " because of an expr with @\n\t",)
         for w in warnings_for_optimisation:
-            logger.warning(w.replace(get_variable_from_lset_without_default('ping_variables_prefix'), ""),)
+            logger.warning(w.replace(get_variable_from_lset_without_default('ping_variables_prefix'), ""))
         print()
 
 

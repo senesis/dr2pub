@@ -20,6 +20,9 @@ import six
 # Logger
 from logger import get_logger
 
+# Config
+from config import get_config_variable, set_config_variable
+
 # DR interface
 from dr_interface import get_collection, get_uid, get_cmor_var_id_by_label, print_DR_stdname_errors, print_DR_errors
 
@@ -55,7 +58,6 @@ stdName2mipvarLabel = OrderedDict()
 tcmName2tcmValue = {"time-mean": "time: mean", "time-point": "time: point"}
 # A dict for storing home_variables issues re. standard_names
 sn_issues_home = OrderedDict()
-homevars_list = None
 
 
 def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None):
@@ -75,7 +77,7 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None):
     """
     logger = get_logger()
     #
-    global homevars_list
+    homevars_list = get_config_variable("homevars_list")
     #
     if hmv_file is None:
         return []
@@ -209,10 +211,10 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None):
                                 extravars.append(var_found)
                         else:
                             extravars.append(var_found)
-    logger.info("Number of 'cmor', 'dev' and 'perso' among home variables: ", len(homevars))
-    logger.info("Number of 'extra' among home variables: ", len(extravars))
+    logger.info("Number of 'cmor', 'dev' and 'perso' among home variables: %d" % len(homevars))
+    logger.info("Number of 'extra' among home variables: %d" % len(extravars))
     homevars.extend(extravars)
-    homevars_list = homevars
+    set_config_variable("homevars_list", homevars)
     return homevars
 
 
@@ -399,7 +401,7 @@ def read_extra_table(path, table):
                                                               realms='atmos aerosol atmosChem')
 
             extravars.append(extra_var)
-    logger.info("For extra table ", table, " (which has %d variables): " % len(extravars))
+    logger.info("For extra table %s (which has %d variables): " % (table, len(extravars)))
     logger.info("\tVariables which dim was found in extra coordinates table:\n%s" %
                 "\n".join(["\t\t%20s : %s\n" % (d, " ".join(sorted(dim_from_extra[d])))
                            for d in sorted(list(dim_from_extra))]))
@@ -418,7 +420,9 @@ def process_home_vars(mip_vars_list, mips, expid=False):
     # Read HOME variables
     homevars = get_variable_from_sset_else_lset_with_default('listof_home_vars', default=None)
     path_extra_tables = get_variable_from_sset_else_lset_with_default('path_extra_tables', default=None)
+    logger.info("homevars file: %s" % homevars)
     home_vars_list = read_home_vars_list(homevars, expid, mips, path_extra_tables)
+    logger.info("homevars list: %s" % " ".join([sv.label for sv in home_vars_list]))
     for hv in home_vars_list:
         hv_info = {"varname": hv.label, "realm": hv.modeling_realm,
                    "freq": hv.frequency, "table": hv.mipTable}
@@ -442,13 +446,13 @@ def process_home_vars(mip_vars_list, mips, expid=False):
                 if not already_in_dr:
                     # Append HOME variable only if not already
                     # selected with the DataRequest
-                    logger.debug("Info:", hv_info, "HOMEVar is not in DR. => Taken into account.")
+                    logger.debug("Info: %s HOMEVar is not in DR. => Taken into account." % hv_info)
                     mip_vars_list.append(updated_hv)
                 else:
-                    logger.debug("Info:", hv_info, "HOMEVar is already in DR. => Not taken into account.")
+                    logger.debug("Info: %s HOMEVar is already in DR. => Not taken into account." % hv_info)
             else:
-                logger.warning("Error:", hv_info, "HOMEVar announced as cmor but no corresponding CMORVar found "
-                                                  "=> Not taken into account.")
+                logger.warning("Error: %s HOMEVar announced as cmor but no corresponding CMORVar found "
+                               "=> Not taken into account." % hv_info)
         elif hv.type in ['perso', ]:
             # Check if HOME variable anounced as 'perso' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
@@ -460,15 +464,16 @@ def process_home_vars(mip_vars_list, mips, expid=False):
                                         cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_cmor_var_id_by_label(hv.label))
                 if has_cmor_varname:
-                    raise VarsError("Error:", hv_info,
+                    raise VarsError("Error: %s "
                                     "HOMEVar is anounced  as perso, is not a CMORVar, but has a cmor name. "
-                                    "=> Not taken into account.")
+                                    "=> Not taken into account." % hv_info)
                 else:
-                    logger.debug("Info:", hv_info, "HOMEVar is purely personnal. => Taken into account.")
+                    logger.debug("Info: %s HOMEVar is purely personnal. => Taken into account." % hv_info)
                     mip_vars_list.append(hv)
             else:
-                raise VarsError("Error:", hv_info,
-                                "HOMEVar is anounced as perso, but in reality is cmor => Not taken into account.")
+                raise VarsError("Error: %s "
+                                "HOMEVar is anounced as perso, but in reality is cmor => Not taken into account." %
+                                hv_info)
         elif hv.type in ['dev', ]:
             # Check if HOME variable anounced as 'dev' is in fact 'cmor'
             is_cmor = get_corresp_cmor_var(hv)
@@ -478,23 +483,25 @@ def process_home_vars(mip_vars_list, mips, expid=False):
                                         cmvar in get_collection('CMORvar').items])
                 # has_cmor_varname=any(get_cmor_var_id_by_label(hv.label))
                 if has_cmor_varname:
-                    raise VarsError("Warning:", hv_info,
+                    raise VarsError("Warning: %s "
                                     "HOMEVar is anounced  as dev, is not a CMORVar, but has a cmor name."
-                                    " => Not taken into account.")
+                                    " => Not taken into account." % hv_info)
                 else:
-                    logger.debug("Info:", hv_info, "HOMEVar is purely dev. => Taken into account.")
+                    logger.debug("Info: %s HOMEVar is purely dev. => Taken into account." % hv_info)
                     mip_vars_list.append(hv)
             else:
-                raise VarsError("Error:", hv_info,
-                                "HOMEVar is anounced as dev, but in reality is cmor => Not taken into account.")
+                raise VarsError("Error: %s "
+                                "HOMEVar is announced as dev, but in reality is cmor => Not taken into account." %
+                                hv_info)
         elif hv.type == 'extra':
             if hv.Priority <= get_variable_from_lset_without_default("max_priority"):
-                logger.debug("Info:", hv_info, "HOMEVar is read in an extra Table with priority ", hv.Priority,
-                             " => Taken into account.")
+                logger.debug("Info: %s HOMEVar is read in an extra Table with priority %s => Taken into account." %
+                             (hv_info, hv.Priority))
                 mip_vars_list.append(hv)
         else:
-            raise VarsError("Error:", hv_info, "HOMEVar type", hv.type,
-                            "does not correspond to any known keyword. => Not taken into account.")
+            raise VarsError("Error: %s HOMEVar type %s"
+                            "does not correspond to any known keyword. => Not taken into account." % (hv_info, hv.type))
+    return mip_vars_list
 
 
 def get_corresp_cmor_var(hmvar):
@@ -534,8 +541,9 @@ def get_corresp_cmor_var(hmvar):
                           "HOMEVar: Spatial and Temporal Shapes specified DO NOT match CMORvar ones. -> Provided:",
                           [hmvar.spatial_shp, hmvar.temporal_shp], 'Expected:', get_spatial_and_temporal_shapes(cmvar))
         else:
-            logger.debug("doesn't match", match_label, match_freq, cmvar.frequency, hmvar.frequency,
-                         match_table, match_realm, empty_realm, hmvar.mipTable)
+            logger.debug("doesn't match %s %s %s %s %s %s %s %s" % (match_label, match_freq, cmvar.frequency,
+                                                                    hmvar.frequency, match_table, match_realm,
+                                                                    empty_realm, hmvar.mipTable))
 
     if count >= 1:
         # empty table means that the frequency is changed (but the variable exists in another frequency cmor table
@@ -612,8 +620,8 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
         st = get_uid(cmvar.stid)
     except:
         if print_DR_errors:
-            logger.error("DR Error: issue with stid for", svar.label, "in Table ", svar.mipTable,
-                         "  => no cell_methods, cell_measures, dimids and sdims derived.")
+            logger.error("DR Error: issue with stid for %s in Table %s  "
+                         "=> no cell_methods, cell_measures, dimids and sdims derived." % (svar.label, svar.mipTable))
     if st is not None:
         svar.struct = st
         try:
@@ -626,13 +634,13 @@ def complement_svar_using_cmorvar(svar, cmvar, sn_issues, debug=[], allow_pseudo
             svar.cell_methods = methods
         except:
             if print_DR_errors:
-                logger.error("DR Error: issue with cell_method for " + st.label)
+                logger.error("DR Error: issue with cell_method for %s" % st.label)
             # TBS# svar.cell_methods=None
         try:
             svar.cell_measures = get_uid(cmvar.stid).cell_measures.rstrip(' ')
         except:
             if print_DR_errors:
-                logger.error("DR Error: Issue with cell_measures for " + repr(cmvar))
+                logger.error("DR Error: Issue with cell_measures for %s" % repr(cmvar))
 
         # A number of DR values indicate a choice or a directive for attribute cell_measures (--OPT, --MODEL ...)
         # See interpretation guidelines at https://www.earthsystemcog.org/projects/wip/drq_interp_cell_center

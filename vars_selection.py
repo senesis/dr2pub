@@ -81,15 +81,15 @@ def endyear_for_CMORvar(cv, expt, year):
 
     # Some debug material
     logger = get_logger()
-    logger.info("In end_year for %s %s" % (cv.label, cv.mipTable))
+    logger.debug("In end_year for %s %s" % (cv.label, cv.mipTable))
     pmax = get_variable_from_sset_else_lset_without_default('max_priority')
 
     # 1- Get the RequestItems which apply to CmorVar
     rVarsUid = get_request_by_id_by_sect(cv.uid, 'requestVar')
     rVars = [get_uid(uid) for uid in rVarsUid if get_uid(uid).priority <= pmax]
-    logger.info("les requestVars:", [rVar.title for rVar in rVars])
+    logger.debug("les requestVars: %s" % " ".join([rVar.title for rVar in rVars]))
     VarGroups = [get_uid(rv.vgid) for rv in rVars]
-    logger.info("les requestVars groups:", [rVg.label for rVg in VarGroups])
+    logger.debug("les requestVars groups: %s" % " ".join([rVg.label for rVg in VarGroups]))
     RequestLinksId = list()
     for vg in VarGroups:
         RequestLinksId.extend(get_request_by_id_by_sect(vg.uid, 'requestLink'))
@@ -98,20 +98,20 @@ def endyear_for_CMORvar(cv, expt, year):
         rl = get_uid(rlid)
         if rl in global_rls:
             FilteredRequestLinks.append(rl)
-    logger.info("les requestlinks:", [get_uid(rlid).label for rlid in RequestLinksId])
-    logger.info("les FilteredRequestlinks:", [rl.label for rl in FilteredRequestLinks])
+    logger.debug("les requestlinks: %s" % " ".join([get_uid(rlid).label for rlid in RequestLinksId]))
+    logger.debug("les FilteredRequestlinks: %s" % " ".join([rl.label for rl in FilteredRequestLinks]))
     RequestItems = list()
     for rl in FilteredRequestLinks:
         RequestItems.extend(get_request_by_id_by_sect(rl.uid, 'requestItem'))
-    logger.info("les requestItems:", [get_uid(riid).label for riid in RequestItems])
+    logger.debug("les requestItems: %s" % " ".join([get_uid(riid).label for riid in RequestItems]))
 
     # 2- Select those request links which include expt and year
     larger = None
     for riid in RequestItems:
         ri = get_uid(riid)
         applies, endyear = RequestItem_applies_for_exp_and_year(ri, expt, year)
-        logger.info("For var and freq selected for debug and year %s, for ri %s, applies=%s, endyear=%s" %
-                    (str(year), ri.title, str(applies), str(endyear)))
+        logger.debug("For var and freq selected for debug and year %s, for ri %s, applies=%s, endyear=%s" %
+                     (str(year), ri.title, str(applies), str(endyear)))
         if applies:
             if endyear is None:
                 return None  # One of the timeslices cover the whole expt
@@ -139,30 +139,30 @@ def RequestItem_applies_for_exp_and_year(ri, experiment, year=None):
     # if ri.title=='AerChemMIP, AERmon-3d, piControl' : debug=True
     # if ri.title=='CFMIP, CFMIP.CFsubhr, amip' : debug=True
     logger = get_logger()
-    logger.debug("In RIapplies.. Checking ", "% 15s" % ri.title,)
+    logger.debug("In RIapplies.. Checking % 15s" % ri.title)
     item_exp = get_uid(ri.esid)
     ri_applies_to_experiment = False
     endyear = None
     # esid can link to an experiment or an experiment group
     if item_exp._h.label in ['experiment', ]:
-        logger.debug("%20s" % "Simple Expt case", item_exp.label,)
+        logger.debug("%20s %s" % ("Simple Expt case", item_exp.label))
         if item_exp.label in [experiment, ]:
             logger.debug(" OK",)
             ri_applies_to_experiment = True
     elif item_exp._h.label in ['exptgroup', ]:
-        logger.debug("%20s" % "Expt Group case ", item_exp.label,)
+        logger.debug("%20s %s" % ("Expt Group case ", item_exp.label))
         exps_id = get_request_by_id_by_sect(ri.esid, 'experiment')
         for e in [get_uid(eid) for eid in exps_id]:
             if e.label in [experiment, ]:
-                logger.debug(" OK for experiment based on group" + item_exp.label,)
+                logger.debug(" OK for experiment based on group %s" % item_exp.label)
                 ri_applies_to_experiment = True
     elif item_exp._h.label in ['mip', ]:
-        logger.debug("%20s" % "Mip case ", get_uid(item_exp.label).label,)
+        logger.debug("%20s %s" % ("Mip case ", get_uid(item_exp.label).label))
         exps_id = get_request_by_id_by_sect(ri.esid, 'experiment')
         for e in [get_uid(eid) for eid in exps_id]:
             logger.debug(e.label, ",",)
             if e.label == experiment:
-                logger.debug(" OK for experiment based on mip" + item_exp.label,)
+                logger.debug(" OK for experiment based on mip %s" % item_exp.label)
                 ri_applies_to_experiment = True
     else:
         logger.debug("Error on esid link for ri : %s uid=%s %s" % (ri.title, ri.uid, item_exp._h.label))
@@ -175,7 +175,7 @@ def RequestItem_applies_for_exp_and_year(ri, experiment, year=None):
             ri_applies_to_experiment = False
 
     if ri_applies_to_experiment:
-        logger.debug("Year considered:", year, type(year))
+        logger.debug("Year considered: %s %s" % (year, type(year)))
         if year is None:
             rep = True
             endyear = None
@@ -184,7 +184,7 @@ def RequestItem_applies_for_exp_and_year(ri, experiment, year=None):
             year = int(year)
             exp = get_uid(get_experiment_label(experiment))
             rep, endyear = year_in_ri(ri, exp, year)
-            logger.debug(" ..year in ri returns :", rep, endyear)
+            logger.debug(" ..year in ri returns : %s %s" % (rep, endyear))
             # if (ri.label=="AerchemmipAermonthly3d") :
             #    print "reqItem=%s,experiment=%s,year=%d,rep=%s,"%(ri.label,experiment,year,rep)
         # print " rep=",rep
@@ -220,7 +220,7 @@ def year_in_ri(ri, exp, year):
     # From now, this the case of a RequestItem which starts from experiment's start
     actual_first_year = experiment_start_year(exp)  # The start year, possibly fixed by the user
     actual_end_year = experiment_end_year_from_sset(exp)  # = the end year requested by the user if any
-    DR_first_year = experiment_start_year_without_sset(exp, debug=debug)
+    DR_first_year = experiment_start_year_without_sset(exp)
     DR_end_year = experiment_end_year(exp)
     logger.debug("year_in_ri : start DR : %s actual : %s | end DR : %s actual : %s | ny=%d" %
                  (DR_first_year, actual_first_year, DR_end_year, actual_end_year, ny))
@@ -246,7 +246,7 @@ def year_in_ri(ri, exp, year):
     RI_end_year = actual_first_year + ny - 1
     # For these kind of requestItem of limited duration, no need to extend it, whatever the actual end date
     applies = (year <= RI_end_year)
-    logger.debug("year_in_ri : returning ", applies, RI_end_year)
+    logger.debug("year_in_ri : returning %s %s" % (applies, RI_end_year))
     return applies, RI_end_year
 
 
@@ -271,34 +271,34 @@ def year_in_ri_tslice(ri, exp, year):
     endyear = None
     tslice = get_uid(ri.tslice)
     logger.debug("tslice label/type is %s/%s for reqItem %s " % (tslice.label, tslice.type, ri.title))
-    if tslice.type == "relativeRange":  # e.g. _slice_abrupt30
+    if tslice.type in ["relativeRange", ]:  # e.g. _slice_abrupt30
         first_year = experiment_start_year(exp)
         # first_year = sset["branch_year_in_child"]
         relevant = (year >= tslice.start + first_year - 1 and year <= tslice.end + first_year - 1)
         endyear = first_year + tslice.end - 1
-    elif tslice.type == "simpleRange":  # e.g. _slice_DAMIP20
+    elif tslice.type in ["simpleRange", ]:  # e.g. _slice_DAMIP20
         relevant = (year >= tslice.start and year <= tslice.end)
         endyear = tslice.end
-    elif tslice.type == "sliceList":  # e.g. _slice_DAMIP40
+    elif tslice.type in ["sliceList", ]:  # e.g. _slice_DAMIP40
         for start in range(tslice.start, int(tslice.end - tslice.sliceLen + 2), int(tslice.step)):
             if year >= start and year < start + tslice.sliceLen:
                 relevant = True
                 endyear = start + tslice.sliceLen - 1
-    elif tslice.type == "dayList":  # e.g. _slice_RFMIP2
+    elif tslice.type in ["dayList", ]:  # e.g. _slice_RFMIP2
         # e.g. startList[i]: [1980, 1, 1, 1980, 4, 1, 1980, 7, 1, 1980, 10, 1, 1992, 1, 1, 1992, 4, 1]
         years = [tslice.startList[3 * i] for i in range(len(tslice.startList) / 3)]
         if year in years:
             relevant = True
             endyear = year
-    elif tslice.type == "startRange":  # e.g. _slice_VolMIP3
+    elif tslice.type in ["startRange", ]:  # e.g. _slice_VolMIP3
         # used only for VolMIP : _slice_VolMIP3
         start_year = experiment_start_year(exp)
         relevant = (year >= start_year and year < start_year + nyear)
         endyear = start_year + nyear - 1
-    elif tslice.type == "monthlyClimatology":  # e.g. _slice_clim20
+    elif tslice.type in ["monthlyClimatology", ]:  # e.g. _slice_clim20
         relevant = (year >= tslice.start and year <= tslice.end)
         endyear = tslice.end
-    elif tslice.type == "branchedYears":  # e.g. _slice_piControl020
+    elif tslice.type in ["branchedYears", ]:  # e.g. _slice_piControl020
         source, source_type = get_source_id_and_type()
         if tslice.child in get_variable_from_lset_without_default("branching", source):
             endyear = False
@@ -334,7 +334,7 @@ def experiment_start_year_without_sset(exp):
     try:
         return int(float(exp.starty))
     except:
-        logger.debug("start_year : starty=", exp.starty)
+        logger.debug("start_year : starty=%s" % exp.starty)
         return None
 
 
@@ -431,7 +431,8 @@ def select_CMORvars_for_lab(sset=False, year=None):
     if rls_for_all_experiments is None:
         # Because scope do not accept list types
         rls_for_mips = sorted(list(sc.getRequestLinkByMip(set(mips_list))), key=lambda x: x.label)
-        logger.info("Number of Request Links which apply to MIPS", print_struct(mips_list), " is: ", len(rls_for_mips))
+        logger.info("Number of Request Links which apply to MIPS %s  is: %d" %
+                    (print_struct(mips_list), len(rls_for_mips)))
         #
         excluded_rls = list()
         for rl in rls_for_mips:
@@ -439,7 +440,7 @@ def select_CMORvars_for_lab(sset=False, year=None):
                 excluded_rls.append(rl)
         for rl in excluded_rls:
             rls_for_mips.remove(rl)
-        logger.info("Number of Request Links after filtering by excluded_request_links is: ", len(rls_for_mips))
+        logger.info("Number of Request Links after filtering by excluded_request_links is: %d" % len(rls_for_mips))
         #
         excluded_rls = list()
         inclinks = get_variable_from_lset_with_default("included_request_links", [])
@@ -450,7 +451,7 @@ def select_CMORvars_for_lab(sset=False, year=None):
             for rl in excluded_rls:
                 logger.critical("RequestLink %s is not included" % rl.label)
                 rls_for_mips.remove(rl)
-        logger.info("Number of Request Links after filtering by included_request_links is: ", len(rls_for_mips))
+        logger.info("Number of Request Links after filtering by included_request_links is: %d" % len(rls_for_mips))
         rls_for_all_experiments = [rl for rl in rls_for_mips]
     else:
         rls_for_mips = sorted(rls_for_all_experiments, key=lambda x: x.label)
@@ -468,7 +469,7 @@ def select_CMORvars_for_lab(sset=False, year=None):
             for ri_id in ri_ids:
                 ri = get_uid(ri_id)
                 # debug=(ri.label=='C4mipC4mipLandt2')
-                logger.debug("Checking requestItem ", ri.title,)
+                logger.debug("Checking requestItem %s" % ri.title,)
                 applies, endyear = RequestItem_applies_for_exp_and_year(ri, experiment_id, year)
                 if applies:
                     logger.debug(" applies ")
@@ -477,9 +478,9 @@ def select_CMORvars_for_lab(sset=False, year=None):
                     logger.debug(" does not apply ")
 
         rls = filtered_rls
-        logger.info("Number of Request Links which apply to experiment ", experiment_id, " member ",
-                    get_variable_from_sset_without_default('realization_index'), " and MIPs",
-                    print_struct(mips_list), " is: ", len(rls))
+        logger.info("Number of Request Links which apply to experiment %s member %s and MIPs %s is: %d" %
+                    (experiment_id, get_variable_from_sset_without_default('realization_index'),
+                     print_struct(mips_list), len(rls)))
         # print "Request links that apply :"+`[ rl.label for rl in filtered_rls ]`
     else:
         rls = rls_for_mips
@@ -551,7 +552,7 @@ def select_CMORvars_for_lab(sset=False, year=None):
             filtered_vars.append((v, g))
             logger.debug("adding var %s, grid=%s, ttable=%s=" % (cmvar.label, g, ttable.label))  # ,exctab,excvars
 
-    logger.info('Number once filtered by excluded/included vars and tables and spatial shapes is : %s' \
+    logger.info('Number once filtered by excluded/included vars and tables and spatial shapes is : %s'
                 % len(filtered_vars))
 
     # Filter the list of grids requested for each variable based on lab policy
@@ -564,14 +565,14 @@ def select_CMORvars_for_lab(sset=False, year=None):
     multiple_grids = list()
     for v in d:
         d[v] = decide_for_grids(v, d[v])
-        if len(d[v] > 1):
+        if len(d[v]) > 1:
             multiple_grids.append(get_uid(v).label)
             if print_multiple_grids:
                 logger.info("\tVariable %s will be processed with multiple grids : %s"
                             % (multiple_grids[-1], repr(d[v])))
-    if not print_multiple_grids:
-        logger.info("\tThese variables will be processed with multiple grids " +
-                    "(rerun with print_multiple_grids set to True for details) :" + repr(multiple_grids.sort()))
+    if not print_multiple_grids and multiple_grids is not None and len(multiple_grids) > 0:
+        logger.info("\tThese variables will be processed with multiple grids "
+                    "(rerun with print_multiple_grids set to True for details) : %s" % repr(multiple_grids.sort()))
     #
     # Print a count of distinct var labels
     logger.info('Number of distinct var labels is : %d' % len(set([get_uid(v).label for v in d])))
@@ -588,8 +589,8 @@ def select_CMORvars_for_lab(sset=False, year=None):
         if get_uid(v).label in ["tas", ]:
             logger.debug("When complementing, tas is included , grids are %s" % svar.grids)
         simplified_vars.append(svar)
-    logger.info('Number of simplified vars is :', len(simplified_vars))
-    logger.info("Issues with standard names are :", print_struct(sorted(list(sn_issues))))
+    logger.info('Number of simplified vars is : %d' % len(simplified_vars))
+    logger.info("Issues with standard names are : %s" % print_struct(sorted(list(sn_issues))))
 
     return simplified_vars
 
@@ -614,8 +615,8 @@ def gather_AllSimpleVars(year=False, select="on_expt_and_year"):
     #
     if get_variable_from_sset_else_lset_with_default('listof_home_vars', 'listof_home_vars', None):
         exp = get_variable_from_sset_with_default_in_sset('experiment_for_requests', 'experiment_id')
-        process_home_vars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
-                          expid=exp)
+        mip_vars_list = process_home_vars(mip_vars_list, get_variable_from_lset_without_default("mips", grid_choice),
+                                          expid=exp)
     else:
         logger.info("Info: No HOMEvars list provided.")
     return mip_vars_list
@@ -653,7 +654,7 @@ def select_variables_to_be_processed(year, context, select):
             old = svars_per_realm[realm][0]
             logger.warning("Duplicate svar %s %s %s %s" % (old.label, old.grid, svar.label, svar.grid))
             pass
-    logger.info("\nRealms for these CMORvars :", *sorted(list(svars_per_realm)))
+    logger.info("\nRealms for these CMORvars : %s" % " ".join(sorted(list(svars_per_realm))))
     #
     # --------------------------------------------------------------------
     # Select on context realms, grouping by table
@@ -693,7 +694,7 @@ def select_variables_to_be_processed(year, context, select):
             logger.info("The following pairs (variable,table) have been excluded for these reasons :\n%s" %
                         "\n".join(["%s: %s" % (reason, print_struct(excludedv[reason], skip_sep=True, sort=True))
                                    for reason in sorted(list(excludedv))]))
-    logger.debug("For table AMon: ", [v.label for v in svars_per_table["Amon"]])
+    logger.debug("For table Amon: %s" % " ".join([v.label for v in svars_per_table.get("Amon", list())]))
     #
     # --------------------------------------------------------------------
     # Add svars belonging to the orphan list
@@ -721,6 +722,6 @@ def select_variables_to_be_processed(year, context, select):
                         toremove.append(svar)
                 for svar in toremove:
                     svars_per_table[table].remove(svar)
-    logger.debug("Pour table AMon: ", [v.label for v in svars_per_table["Amon"]])
+    logger.debug("Pour table Amon: %s" % " ".join([v.label for v in svars_per_table.get("Amon", list())]))
     # Return the different values
     return svars_per_table

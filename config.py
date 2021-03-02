@@ -38,6 +38,9 @@ compression_factor = None
 # Variable used to store split_frequencies
 splitfreqs = None
 
+# Home vars list
+homevars_list = None
+
 
 # Functions to deal with those configuration variables
 def initialize_config_variables():
@@ -45,6 +48,7 @@ def initialize_config_variables():
     set_config_variable("cell_method_warnings", list())
     set_config_variable("compression_factor", None)
     set_config_variable("splitfreqs", None)
+    set_config_variable("homevars_list", None)
 
 
 def set_config_variable(variable, value):

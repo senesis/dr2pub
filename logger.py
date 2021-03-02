@@ -20,7 +20,7 @@ log_level = "info"
 logger = logging.getLogger()
 
 
-def initialize_logger(logfile, default=False, level="info"):
+def initialize_logger(logfile=log_file, default=False, level="info"):
     change_log_file(logfile=logfile, default=default)
     change_log_level(level=level)
 
@@ -30,16 +30,22 @@ def change_log_file(logfile=log_file, default=False):
     if default:
         logger = get_logger()
         for hdlr in logger.handlers[:]:
-            hdlr.flush()
-            hdlr.close()
+            try:
+                hdlr.flush()
+                hdlr.close()
+            except:
+                pass
             logger.removeHandler(hdlr)
         logger.addHandler(logging.StreamHandler(sys.stdout))
     else:
         log_file = logfile
         logger = logging.getLogger()
         for hdlr in logger.handlers[:]:
-            hdlr.flush()
-            hdlr.close()
+            try:
+                hdlr.flush()
+                hdlr.close()
+            except:
+                pass
             logger.removeHandler(hdlr)
         new_hdlr = logging.FileHandler(log_file)
         logger.addHandler(new_hdlr)

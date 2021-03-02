@@ -44,7 +44,7 @@ def freq2datefmt(in_freq, operation, table):
     datefmt = False
     offset = None
     freq = in_freq
-    if freq == "dec" or freq == "10y":
+    if freq in ["dec", "10y"]:
         if not any("dec" in f for f in get_variable_from_lset_with_default("too_long_periods", [])):
             datefmt = "%y"
             if operation in ["average", "minimum", "maximum"]:
@@ -53,7 +53,7 @@ def freq2datefmt(in_freq, operation, table):
                 offset = "10y"
         else:
             freq = "yr"  # Ensure dates in filenames are consistent with content, even if not as required
-    if freq == "yr" or freq == "yrPt" or freq == "1y":
+    if freq in ["yr", "yrPt", "1y"]:
         if not any("yr" in f for f in get_variable_from_lset_with_default("too_long_periods", [])):
             datefmt = "%y"
             if operation in ["average", "minimum", "maximum"]:
@@ -68,19 +68,19 @@ def freq2datefmt(in_freq, operation, table):
             offset = False
         else:
             offset = "1mo"
-    elif freq == "day" or freq == "1d":
+    elif freq in ["day", "1d"]:
         datefmt = "%y%mo%d"
         if operation in ["average", "minimum", "maximum"]:
             offset = "12h"
         else:
             offset = "1d"
-    elif freq == "10day" or freq == "10d":
+    elif freq in ["10day", "10d"]:
         datefmt = "%y%mo%d"
         if operation in ["average", "minimum", "maximum"]:
             offset = "30h"
         else:
             offset = "2.5d"
-    elif freq == "5day" or freq == "5d":
+    elif freq in ["5day", "5d"]:
         datefmt = "%y%mo%d"
         if operation in ["average", "minimum", "maximum"]:
             offset = "60h"
@@ -104,9 +104,9 @@ def freq2datefmt(in_freq, operation, table):
             else:
                 offset = "1h"
     elif freq in ["1hrClimMon", "1hrCM"]:
-        return "%y%mo%d%h%mi", "0s", "0s"
+        datefmt = "%y%mo%d%h%mi"
         offset = "0s"
-    elif freq == "subhr" or freq == "subhrPt" or freq == "1ts":
+    elif freq in ["subhr", "subhrPt", "1ts"]:
         datefmt = "%y%mo%d%h%mi%s"
         if operation in ["average", "minimum", "maximum"]:
             # Does it make sense ??
@@ -118,7 +118,9 @@ def freq2datefmt(in_freq, operation, table):
                 offset = get_variable_from_lset_with_default("CFsubhr_frequency", "1ts")
     elif "fx" in freq:
         pass  # WIP doc v6.2.3 - Apr. 2017: if frequency="fx", [_<time_range>] is ommitted
-    if offset is not None:
+    if freq in ["1hrClimMon", "1hrCM"]:
+        offset_end = "0s"
+    elif offset is not None:
         if operation in ["average", "minimum", "maximum"]:
             if offset is not False:
                 offset_end = "-" + offset
@@ -126,11 +128,11 @@ def freq2datefmt(in_freq, operation, table):
                 offset_end = False
         else:
             offset_end = "0s"
+    elif "fx" not in freq:
+        raise Dr2xmlError("Cannot compute offsets for freq=%s and operation=%s" % (freq, operation))
     else:
         offset = "0s"
         offset_end = "0s"
-        if "fx" not in freq:
-            raise Dr2xmlError("Cannot compute offsets for freq=%s and operation=%s" % (freq, operation))
     return datefmt, offset, offset_end
 
 
@@ -385,7 +387,7 @@ def cmip6_freq_to_xios_freq(freq, table):
         if table == "CFsubhr":
             rep = get_variable_from_lset_with_default("CFsubhr_frequency", "1ts")
         elif table is None:
-            logger.error("Issue in dr2xml with table None and freq=", freq)
+            logger.error("Issue in dr2xml with table None and freq=%s" % freq)
             sys.exit(0)
         else:
             rep = "1ts"
