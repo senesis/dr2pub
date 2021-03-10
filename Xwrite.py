@@ -209,7 +209,7 @@ def write_xios_file_def_for_svar(sv, year, table, lset, sset, out, cvspath,
     # print(pingvars)
     # print("+++ =>>>>>>>>>>>", alias_ping, " ", sv.label)
     # print(alias_ping, "in pingvars?", alias_ping in pingvars)
-    if alias_ping not in pingvars and sv.type not in ["dev", ]:
+    if alias_ping not in pingvars and sv.type not in ["dev", "perso"]:
         table = sv.mipTable
         if table not in skipped_vars_per_table:
             skipped_vars_per_table[table] = []
