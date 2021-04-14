@@ -175,6 +175,20 @@ class Element(Beacon):
             element.update_level(self.level + 1)
             self.children.insert(index, element)
 
+    def replace(self, index, element):
+        """
+
+        :param index:
+        :param element:
+        :return:
+        """
+        if element is not None:
+            if not is_xml_element(element):
+                raise TypeError("Could not replace and XML element by an element of type %s to an XML element." %
+                                type(element))
+            element.update_level(self.level + 1)
+            self.children[index] = element
+
     def remove(self, element):
         """
 

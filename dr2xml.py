@@ -746,7 +746,7 @@ def generate_file_defs_inner(lset, sset, year, enddate, context, cvs_path, pingf
                      actually_written_vars, get_variable_from_lset_with_default("print_stats_per_var_label", False))
 
     warn = OrderedDict()
-    for warning, label, table in get_config_variable("cell_method_warnings"):
+    for warning, label, table in get_config_variable("cell_method_warnings", to_change=True):
         if warning not in warn:
             warn[warning] = set()
         warn[warning].add(label)

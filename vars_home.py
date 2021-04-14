@@ -80,8 +80,8 @@ def read_home_vars_list(hmv_file, expid, mips, path_extra_tables=None):
     homevars_list = get_config_variable("homevars_list")
     #
     if hmv_file is None:
-        return []
-    if homevars_list is not None:
+        return list()
+    elif homevars_list is not None:
         return homevars_list
     # File structure: name of attributes to read, number of header line
     home_attrs = ['type', 'label', 'modeling_realm', 'frequency', 'mipTable', 'temporal_shp', 'spatial_shp',

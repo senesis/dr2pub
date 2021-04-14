@@ -1068,67 +1068,67 @@ def process_singleton(sv, alias, pingvars, field_defs, grid_defs, scalar_defs, t
     #
     # for each sv's singleton dimension, create the scalar, add a scalar
     # construct in a further grid, and convert field to a further field
-    for dimk in sorted(list(sv.sdims)):
-        sdim = sv.sdims[dimk]
-        if is_singleton(sdim):  # Only one dim should match
-            #
-            # Create a scalar for singleton dimension
-            # sdim.label is non-ambiguous id, thanks to the DR, but its value may be
-            # ambiguous w.r.t. a dr2xml suffix for interpolating to a single pressure level
-            scalar_id = "Scal" + sdim.label
+    for sdim in [sv.sdims[dimk] for dimk in sorted(list(sv.sdims)) if is_singleton(sv.sdims[dimk])]:
+        #
+        # Create a scalar for singleton dimension
+        # sdim.label is non-ambiguous id, thanks to the DR, but its value may be
+        # ambiguous w.r.t. a dr2xml suffix for interpolating to a single pressure level
+        scalar_id = "Scal" + sdim.label
+        # These dimensions are shared by some variables with another sdim with same out_name ('type'):
+        if sdim.label in ["typec3pft", "typec4pft"]:
+            name = "pfttype"
+        else:
             name = sdim.out_name
-            # These dimensions are shared by some variables with another sdim with same out_name ('type'):
-            if sdim.label in ["typec3pft", "typec4pft"]:
-                name = "pfttype"
-            #
-            #
-            if sdim.stdname.strip() != '' and sdim.label != "typewetla":
-                standard_name = sdim.stdname
-            else:
-                standard_name = None
-            #
-            label = None
+        #
+        #
+        if sdim.stdname.strip() != '' and sdim.label != "typewetla":
+            standard_name = sdim.stdname
+        else:
+            standard_name = None
+        #
+        if sdim.type in ['character', ]:
+            label = sdim.label
             prec = None
             value = None
-            if sdim.type in ['character', ]:
-                label = sdim.label
-            else:
-                types = {'double': '8', 'float': '4', 'integer': '2'}
-                prec = types[sdim.type]
-                value = sdim.value
-            #
-            bounds = None
-            bounds_name = None
-            if sdim.bounds in ["yes", ]:
-                try:
-                    bounds = sdim.boundsValues.split()
-                    bounds = "(0,1)[ {} {} ]".format(bounds[0], bounds[1])
-                    bounds_name = "{}_bounds".format(sdim.out_name)
-                except:
-                    if sdim.label != "lambda550nm":
-                        raise Dr2xmlError("Issue for var %s with dim %s bounds=%s" % (sv.label, sdim.label, bounds))
-            #
+        else:
+            types = {'double': '8', 'float': '4', 'integer': '2'}
+            label = None
+            prec = types[sdim.type]
+            value = sdim.value
+        #
+        bounds = None
+        bounds_name = None
+        if sdim.bounds in ["yes", ]:
+            try:
+                bounds = sdim.boundsValues.split()
+                bounds = "(0,1)[ {} {} ]".format(bounds[0], bounds[1])
+                bounds_name = "{}_bounds".format(sdim.out_name)
+            except:
+                if sdim.label != "lambda550nm":
+                    raise Dr2xmlError("Issue for var %s with dim %s bounds=%s" % (sv.label, sdim.label, bounds))
+        #
+        positive = None
+        if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
+            # Space axis, probably Z
+            axis_type = sdim.axis
+            if sdim.positive:
+                positive = sdim.positive
+        else:
             axis_type = None
-            positive = None
-            if isinstance(sdim.axis, six.string_types) and len(sdim.axis) > 0:
-                # Space axis, probably Z
-                axis_type = sdim.axis
-                if sdim.positive:
-                    positive = sdim.positive
-            #
-            scalar_def = DR2XMLScalar(id=scalar_id, name=name, standard_name=standard_name, long_name=sdim.title,
-                                      label=label, prec=prec, value=value, bounds=bounds, bounds_name=bounds_name,
-                                      axis_type=axis_type, positive=positive, unit=sdim.units)
-            scalar_defs[scalar_id] = scalar_def
-            logger.debug("process_singleton : adding scalar %s" % scalar_def)
-            #
-            # Create a grid with added (or changed) scalar
-            glabel = further_grid_id + "_" + scalar_id
-            further_grid_def = add_scalar_in_grid(further_grid_def, glabel, scalar_id, name,
-                                                  sdim.axis == "Z" and further_grid_def != "NATURE_landuse")
-            logger.debug("process_singleton : adding grid %s" % further_grid_def)
-            grid_defs[glabel] = further_grid_def
-            further_grid_id = glabel
+        #
+        scalar_def = DR2XMLScalar(id=scalar_id, name=name, standard_name=standard_name, long_name=sdim.title,
+                                  label=label, prec=prec, value=value, bounds=bounds, bounds_name=bounds_name,
+                                  axis_type=axis_type, positive=positive, unit=sdim.units)
+        scalar_defs[scalar_id] = scalar_def
+        logger.debug("process_singleton : adding scalar %s" % scalar_def)
+        #
+        # Create a grid with added (or changed) scalar
+        glabel = further_grid_id + "_" + scalar_id
+        further_grid_def = add_scalar_in_grid(further_grid_def, glabel, scalar_id, name,
+                                              sdim.axis == "Z" and further_grid_def != "NATURE_landuse")
+        logger.debug("process_singleton : adding grid %s" % further_grid_def)
+        grid_defs[glabel] = further_grid_def
+        further_grid_id = glabel
 
     # Compare grid definition (in case the input_grid already had correct ref to scalars)
     if further_grid_def != input_grid_def:
@@ -1165,60 +1165,6 @@ def is_singleton(sdim):
         # Case of space dimension singletons. Should a 'value' and no 'requested'
         return ((sdim.value != '') and (sdim.requested.strip() == '')) \
                or (sdim.label == "typewetla")  # The latter is a bug in DR01.00.21 : typewetla has no value there
-
-
-def add_scalar_in_grid(gridin_def, gridout_id, scalar_id, scalar_name, remove_axis, change_scalar=True):
-    """
-    Returns a grid_definition with id GRIDOUT_ID from an input grid definition
-    GRIDIN_DEF, by adding a reference to scalar SCALAR_ID
-
-    If CHANGE_SCALAR is True and GRIDIN_DEF has an axis with an extract_axis child,
-    remove it (because it is assumed to be a less well-defined proxy for the DR scalar
-
-    If such a reference is already included in that grid definition, just return
-    input def
-
-    if REMOVE_AXIS is True, if GRIDIN_DEF already includes an axis, remove it for output grid
-
-    Note : name of input_grid is not changed in output_grid
-
-    """
-    rep = gridin_def.copy()
-    test_scalar_in_grid = False
-    for child in rep:
-        if child.tag == "scalar":
-            if "scalar_ref" in child.attrib and child.attrib["scalar_ref"] == scalar_id:
-                test_scalar_in_grid = True
-    if test_scalar_in_grid:
-        return rep
-    # TBD : in change_scalar : discard extract_axis only if really relevant (get the right axis)
-    # TBD : in change_scalar : preserve ordering of domains/axes...
-    if change_scalar:
-        count = 0
-        children_to_remove = list()
-        for child in rep:
-            test_child = False
-            if child.tag == "scalar":
-                for scalar_child in child:
-                    if scalar_child.tag == "extract_axis":
-                        test_child = True
-            if test_child:
-                count += 1
-                children_to_remove.append(child)
-        for child_to_remove in children_to_remove:
-            rep.remove(child_to_remove)
-    if "id" in rep.attrib:
-        rep.attrib["id"] = gridout_id
-        rep.append(DR2XMLScalar(scalar_ref=scalar_id, name=scalar_name))
-    else:
-        raise Dr2xmlError("No way to add scalar '%s' in grid '%s'" % (scalar_id, gridin_def))
-    # Remove any axis if asked for
-    if remove_axis:
-        remove_subelement_in_xml_element(xml_element=rep, tag="axis")
-        # if count==1 :
-        #    print "Info: axis has been removed for scalar %s (%s)"%(scalar_name,scalar_id)
-        #    print "grid_def="+rep
-    return rep
 
 
 def wrv(name, value, num_type="string"):

@@ -17,9 +17,10 @@ from collections import OrderedDict
 import os
 import os.path
 import sys
+import six
 
 # Interface to xml tools
-from xml_interface import get_root_of_xml_file
+from xml_interface import get_root_of_xml_file, is_xml_element_to_parse
 
 # Logger
 from logger import get_logger
@@ -40,47 +41,36 @@ attributes['axis'] = ['axis_ref']
 # attributes['grid_definition'] = []  # attributes['calendar'] = []
 
 
-def read_src(elt, path_parse, level=0, dont_read=[]):
+def read_src(elt, path_parse, level=0, dont_read=list()):
     """
     Recursively reads the subfiles indicated by tag 'src' in childs of ELT
     """
     logger = get_logger()
-    childs = []
-    children_to_delete = list()
-    for child in elt:
-        if getattr(child, "attrib", None) is None:
-            children_to_delete.append(child)
+    nb_remove_child = 0
+    for i in range(len(elt)):
+        child = elt[i - nb_remove_child]
+        if not is_xml_element_to_parse(child):
+            elt.remove(child)
+            nb_remove_child += 1
         elif 'src' in child.attrib:
             src = child.attrib['src']
-            if src[0] != "/":
-                if path_parse != "./":
-                    filen = path_parse + "/" + src
-                else:
-                    filen = src
+            if not src.startswith(os.path.sep) and path_parse not in ["./", ]:
+                filen = os.path.sep.join([path_parse, src])
             else:
                 filen = src
-            skip = False
-            for prefix in dont_read:
-                if os.path.basename(filen)[0:len(prefix)] == prefix:
-                    skip = True
-            if skip:
-                continue
-            logger.debug(level * "\t" + "Reading %s" % filen)
-            et = get_root_of_xml_file(filen)
-            logger.debug(level * "\t" + "Reading %s, %s=%s" % (filen, et.tag, gattrib(et, 'id', 'no_id')))
-            for el in et:
-                if getattr(el, "tag", None):
+            if not any([os.path.basename(filen).startswith(prefix) for prefix in dont_read]):
+                logger.debug(level * "\t" + "Reading %s" % filen)
+                et = get_root_of_xml_file(filen)
+                logger.debug(level * "\t" + "Reading %s, %s=%s" % (filen, et.tag, gattrib(et, 'id', 'no_id')))
+                for el in [el for el in et if getattr(el, "tag", None) is not None]:
+                    # Skip comments and header
                     logger.debug((level + 1) * "\t" + "Storing %s in %s id=%s" % (el.tag, child.tag,
                                                                                   gattrib(child, 'id', 'no_id')))
                     child.append(el)
-                else:
-                    # Case of comments and headers
-                    pass
-    for child in children_to_delete:
-        elt.remove(child)
-    for child in elt:
-        # print level*"\t"+"Recursing on %s %s"%(child.tag,gattrib(child,'id','no_id'))
-        read_src(child, path_parse, level + 1, dont_read)
+            elt.replace(i - nb_remove_child, read_src(child, path_parse, level + 1, dont_read))
+        else:
+            elt.replace(i - nb_remove_child, read_src(child, path_parse, level + 1, dont_read))
+    return elt
 
 
 def gattrib(e, attrib_name, default=None):
@@ -103,26 +93,29 @@ def merge_sons(elt, level=0):
     on tag+id when tag is 'context' or 'field' or '..._group'
     """
     logger = get_logger()
-    toremove = []
     # Using a dict with first instance of an elt for each tag (or tag+id)
     bytag = OrderedDict()
     tags_to_merge = ['context', 'file_definition', 'field_definition',
                      'axis_definition', 'grid_definition', 'calendar', 'field',
                      'field_group', 'file_group']
-    for child in elt:
-        if child.tag not in tags_to_merge:
-            continue
-        if child.tag not in ['context', 'field'] and '_group' not in child.tag:
-            tag = child.tag
-        else:
-            if 'id' in child.attrib:
+    nb_child_remove = 0
+    for i in range(len(elt)):
+        child = elt[i - nb_child_remove]
+        if child.tag in tags_to_merge:
+            if child.tag not in ['context', 'field'] and '_group' not in child.tag:
+                tag = child.tag
+            elif 'id' in child.attrib:
                 tag = child.tag + "_" + child.attrib['id']
             else:
-                continue  # do not merge attributes for anonymous fields
-        if tag not in bytag:
-            bytag[tag] = child
-        else:
-            if child != bytag[tag]:
+                # do not merge attributes for anonymous fields
+                logger.debug(level * "\t" + "%s %s" % (child.tag, child.attrib.get('id', 'no_id')))
+                elt.replace(i - nb_child_remove, merge_sons(child, level + 1))
+                continue
+            if tag not in bytag:
+                bytag[tag] = child
+                logger.debug(level * "\t" + "%s %s" % (child.tag, child.attrib.get('id', 'no_id')))
+                elt.replace(i - nb_child_remove, merge_sons(child, level + 1))
+            elif child != bytag[tag]:
                 if 'src' in child.attrib:
                     name = child.attrib['src']
                 else:
@@ -138,15 +131,13 @@ def merge_sons(elt, level=0):
                 # Update attributes, too
                 for a in child.attrib:
                     bytag[tag].attrib[a] = child.attrib[a]
-                toremove.append(child)
-    for child in toremove:
-        logger.debug("removing one %s child : %s" % (elt.tag, child.tag))
-        elt.remove(child)
-    # Recursion
-    for child in elt:
-        if child.tag is not None:
+                logger.debug("removing one %s child : %s" % (elt.tag, child.tag))
+                elt.remove(child)
+                nb_child_remove += 1
+        else:
             logger.debug(level * "\t" + "%s %s" % (child.tag, child.attrib.get('id', 'no_id')))
-            merge_sons(child, level + 1)
+            elt.replace(i - nb_child_remove, merge_sons(child, level + 1))
+    return elt
 
 
 def solve_downward(attrib, elt, value=None, level=0):
@@ -155,22 +146,23 @@ def solve_downward(attrib, elt, value=None, level=0):
     to the value encountered in an intermediate node
     """
     logger = get_logger()
-    for child in elt:
+    for i in range(len(elt)):
+        child = elt[i]
         value_down = value
         logger.debug(level * "\t" + " solving on " + repr(child),)
-        if attrib in attributes.get(child.tag, []):
-            if attrib not in child.attrib:
-                if value is not None:
-                    child.attrib[attrib] = value
-                    logger.debug(" set :" + value)
-                else:
-                    logger.debug(" pass")
-            else:
+        if attrib in attributes.get(child.tag, list()):
+            if attrib in child.attrib:
                 value_down = child.attrib[attrib]
                 logger.debug(" get :" + value_down)
+            elif attrib not in child.attrib and value is not None:
+                child.attrib[attrib] = value
+                logger.debug(" set :" + value)
+            else:
+                logger.debug(" pass")
         else:
             logger.debug("")
-        solve_downward(attrib, child, value_down, level + 1)
+        elt.replace(i, solve_downward(attrib, child, value_down, level + 1))
+    return elt
 
 
 def make_index(elt, index=None, level=0):
@@ -182,23 +174,18 @@ def make_index(elt, index=None, level=0):
     logger = get_logger()
     if index is None:
         index = OrderedDict()
-    for child in elt:
-        if 'id' in child.attrib:
-            the_id = child.attrib['id']
-            logger.debug(level * "\t" + " indexing " + the_id,)
-            if the_id in index:
-                logger.debug(" (merging)")
-                # Update indexed object with current attributes
-                for a in child.attrib:
-                    index[the_id].attrib[a] = child.attrib[a]
-                # Add child chidlren to indexed objects
-                for sub in child:
-                    index[the_id].append(sub)
-            else:
-                logger.debug(" init index")
-                index[the_id] = child
-        # else:
-        #    if printout : print
+    for child in [child for child in elt if "id" in child.attrib]:
+        the_id = child.attrib['id']
+        logger.debug(level * "\t" + " indexing " + the_id,)
+        if the_id in index:
+            logger.debug(" (merging)")
+            # Update indexed object with current attributes
+            index[the_id].attrib.update(child.attrib)
+            # Add child chidlren to indexed objects
+            index[the_id].extend(child[:])
+        else:
+            logger.debug(" init index")
+            index[the_id] = child
     for child in elt:
         make_index(child, index, level + 1)
     return index
@@ -210,24 +197,21 @@ def attrib_by_ref(elt, attrib, index, level):
         and objects's dict INDEX
     """
     logger = get_logger()
-    for a in elt.attrib:
-        if '_ref' in a:
-            refid = elt.attrib[a]
-            logger.debug("\n" + (level + 1) * "\t" + a + " -> " + refid,)
-            try:
-                ref = index[refid]
-                if attrib in ref.attrib:
-                    rep = ref.attrib[attrib]
-                    logger.debug(" ---> !! GOT : " + rep + " !!!")
-                    return rep
-                else:
-                    rep = attrib_by_ref(ref, attrib, index, level + 1)
-                    if rep:
-                        return rep
-            except:
-                if not refid.startswith("dummy_"):
-                    logger.error("Error : reference '%s' is invalid" % refid)
-                    sys.exit(1)
+    for a in [att for att in elt.attrib if "_ref" in att]:
+        refid = elt.attrib[a]
+        logger.debug("\n" + (level + 1) * "\t" + a + " -> " + refid,)
+        try:
+            ref = index[refid]
+            if attrib in ref.attrib:
+                rep = ref.attrib[attrib]
+            else:
+                rep = attrib_by_ref(ref, attrib, index, level + 1)
+            logger.debug(" ---> !! GOT : %s !!!" % rep)
+            if rep:
+                return rep
+        except:
+            if not refid.startswith("dummy_"):
+                raise XparseError("Error : reference '%s' is invalid" % refid)
 
 
 def solve_by_ref(attrib, index, elt, level=0):
@@ -236,29 +220,28 @@ def solve_by_ref(attrib, index, elt, level=0):
     """
     logger = get_logger()
     got_one = 0
-    for child in elt:
-        if not isinstance(child, str) and child.tag != 'variable' and child.tag is not None:
-            if 'id' in child.attrib:
-                name = child.attrib['id']
+    for child in [child for child in elt if not isinstance(child, six.string_types) and
+                                            child.tag not in ["variable", None]]:
+        if 'id' in child.attrib:
+            name = child.attrib['id']
+        else:
+            name = child.tag
+        logger.debug(level * "\t" + attrib + " by_ref on  " + name,)
+        #
+        if not(child.tag in attributes and attrib in attributes[child.tag]):
+            logger.debug(" : N/A")
+        else:
+            if attrib in child.attrib:
+                logger.debug(", already set : %s" % child.attrib[attrib])
             else:
-                name = child.tag
-            logger.debug(level * "\t" + attrib + " by_ref on  " + name,)
-            #
-            if child.tag in attributes and attrib in attributes[child.tag]:
-                if attrib not in child.attrib:
-                    byref = attrib_by_ref(child, attrib, index, level)
-                    if byref:
-                        # if printout : print ", setting byref to "+byref,
-                        child.attrib[attrib] = byref
-                        got_one = got_one + 1
-                    else:
-                        logger.debug("")
+                byref = attrib_by_ref(child, attrib, index, level)
+                if byref:
+                    # if printout : print ", setting byref to "+byref,
+                    child.attrib[attrib] = byref
+                    got_one += 1
                 else:
-                    logger.debug(", already set : %s" % child.attrib[attrib])
-                got = solve_by_ref(attrib, index, child, level + 1)
-                got_one = got_one + got
-            else:
-                logger.debug(" : N/A")
+                    logger.debug("")
+            got_one += solve_by_ref(attrib, index, child, level + 1)
     return got_one
 
 
@@ -287,13 +270,13 @@ def init_context(context_id, path_parse="./"):
     logger.debug("Parsing %s ..." % xmldef,)
     rootel = get_root_of_xml_file(xmldef)
     logger.debug("sourcing files  ...",)
-    read_src(rootel, path_parse, dont_read=["dr2xml_"])
-    merge_sons(rootel)
+    rootel = read_src(rootel, path_parse, dont_read=["dr2xml_"])
+    rootel = merge_sons(rootel)
     rootel = select_context(rootel, context_id)
     if rootel is not None:
         refs = ["grid_ref", "domain_ref", "axis_ref", "field_ref"]
         for ref in refs:
-            solve_downward(ref, rootel, None)
+            rootel = solve_downward(ref, rootel, None)
         # ET.dump(rootel)
         index = make_index(rootel, None)
         for ref in refs:

@@ -55,20 +55,24 @@ def set_config_variable(variable, value):
     """
     Set the value of the indicated global variable
     """
-    if variable in globals():
+    if variable in ["python_version", "version", "conventions", "CMIP6_conventions_version", "context_index",
+                    "cell_method_warnings", "compression_factor", "splitfreqs", "homevars_list"]:
         globals()[variable] = copy.deepcopy(value)
     else:
         raise Dr2xmlError("Can not set configuration variable %s." % variable)
 
 
-def get_config_variable(variable):
+def get_config_variable(variable, to_change=False):
     """
     Get the value of the indicated global variable.
     """
-    if variable in globals():
+    if variable not in ["python_version", "version", "conventions", "CMIP6_conventions_version", "context_index",
+                        "cell_method_warnings", "compression_factor", "splitfreqs", "homevars_list"]:
+        raise Dr2xmlError("Unknown configuration variable %s." % variable)
+    elif to_change:
         return copy.deepcopy(globals()[variable])
     else:
-        raise Dr2xmlError("Unknown configuration variable %s." % variable)
+        return globals()[variable]
 
 
 def add_value_in_list_config_variable(variable, value):

@@ -27,7 +27,7 @@ def read_splitfreqs():
     Read split_frequencies: first column is variable label, second
     column is mipTable; third column is the split_freq
     """
-    splitfreqs = get_config_variable("splitfreqs")
+    splitfreqs = get_config_variable("splitfreqs", to_change=True)
     # No need to reread or try for ever
     if splitfreqs is not None:
         return
@@ -65,7 +65,7 @@ def read_compression_factors():
     the same compression_level setting
     This factor is applied above the bytes_per_float setting
     """
-    compression_factor = get_config_variable("compression_factor")
+    compression_factor = get_config_variable("compression_factor", to_change=True)
     # No need to reread or try for ever
     if compression_factor is not None:
         return

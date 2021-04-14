@@ -68,6 +68,15 @@ def add_xml_comment_to_element(element, text):
     element.append(create_xml_comment(text))
 
 
+def is_xml_element_to_parse(element):
+    """
+
+    :param element:
+    :return:
+    """
+    return isinstance(element, xml_writer.element.Element)
+
+
 def parse_xml_file(xml_file):
     """
 

@@ -498,7 +498,7 @@ def check_for_file_input(sv, hgrid, pingvars, field_defs, grid_defs, domain_defs
         field_def = DR2XMLField(id=pingvar, grid_ref=grid_id, field_ref=field_in_file_id, operation="instant",
                                 freq_op="1ts", freq_offset="0ts")
         field_defs[field_in_file_id] = field_def
-        context_index = get_config_variable("context_index")
+        context_index = get_config_variable("context_index", to_change=True)
         context_index[pingvar] = field_def
 
         if printout:

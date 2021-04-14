@@ -51,12 +51,11 @@ def get_grid_def(grid_id, grid_defs):
     if grid_id in grid_defs:
         # Simple case : already stored
         grid_def = grid_defs[grid_id]
+    elif grid_id in context_index:
+        # Grid defined through xml
+        grid_def = context_index[grid_id]
     else:
-        if grid_id in context_index:
-            # Grid defined through xml
-            grid_def = context_index[grid_id]
-        else:
-            raise Dr2xmlError("Cannot guess a grid def for %s" % grid_id)
+        raise Dr2xmlError("Cannot guess a grid def for %s" % grid_id)
     return grid_def
 
 
@@ -207,31 +206,32 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
         raise Dr2xmlError("deprecated")
     else:
         src_grid = get_grid_def_with_lset(src_grid_id, grid_defs)
-    target_grid_id = src_grid_id + "_" + domain_id
-    # print("<<<DEBUG>>> src_grid_id, domain_id, target_grid_id", src_grid_id, domain_id, target_grid_id)
-    # sequence below was too permissive re. assumption that all grid definition use refs rather than ids
-    # (target_grid_string,count)=re.subn('domain *id= *.([\w_])*.','%s id="%s" %s'% \
-    # (domain_or_axis,domain_id,axis_name), src_grid_string,1)
-    # if count != 1 :
-    target_grid_xml = src_grid.copy()
-    is_domain_found = False
-    for (rank, grid_child) in enumerate(src_grid):
-        # print("<<<DEBUG>>> rank, tag, domain_ref in", rank, grid_child.tag, "domain_ref" in grid_child.attrib)
-        if not is_domain_found and grid_child.tag == "domain" and "domain_ref" in grid_child.attrib:
-            if turn_into_axis:
-                target_grid_xml[rank].tag = "axis"
-                del target_grid_xml[rank].attrib["domain_ref"]
-                target_grid_xml[rank].attrib["axis_ref"] = domain_id
-                target_grid_xml[rank].attrib["name"] = "lat"
-            else:
-                target_grid_xml[rank].attrib["domain_ref"] = domain_id
-            is_domain_found = True
-    if not is_domain_found:
-        raise Dr2xmlError("Fatal: cannot find a domain to replace by %s in src_grid_string %s" % (domain_id, src_grid))
-    target_grid_xml.attrib["id"] = target_grid_id
-    grid_defs[target_grid_id] = target_grid_xml
-    # print "target_grid_id=%s : %s"%(target_grid_id,target_grid_string)
-    return target_grid_id
+        #
+        target_grid_id = src_grid_id + "_" + domain_id
+        # print("<<<DEBUG>>> src_grid_id, domain_id, target_grid_id", src_grid_id, domain_id, target_grid_id)
+        # sequence below was too permissive re. assumption that all grid definition use refs rather than ids
+        # (target_grid_string,count)=re.subn('domain *id= *.([\w_])*.','%s id="%s" %s'% \
+        # (domain_or_axis,domain_id,axis_name), src_grid_string,1)
+        # if count != 1 :
+        target_grid_xml = src_grid.copy()
+        rank = [i for i in range(len(target_grid_xml)) if target_grid_xml[i].tag in ["domain", ]
+                and "domain_ref" in target_grid_xml[i].attrib]
+        if len(rank) == 0:
+            raise Dr2xmlError("Fatal: cannot find a domain to replace by %s in src_grid_string %s" % (domain_id,
+                                                                                                      src_grid))
+        else:
+            rank = rank[0]
+        if turn_into_axis:
+            target_grid_xml[rank].tag = "axis"
+            del target_grid_xml[rank].attrib["domain_ref"]
+            target_grid_xml[rank].attrib["axis_ref"] = domain_id
+            target_grid_xml[rank].attrib["name"] = "lat"
+        else:
+            target_grid_xml[rank].attrib["domain_ref"] = domain_id
+        target_grid_xml.attrib["id"] = target_grid_id
+        grid_defs[target_grid_id] = target_grid_xml
+        # print "target_grid_id=%s : %s"%(target_grid_id,target_grid_string)
+        return target_grid_id
 
 
 def get_grid_def_with_lset(grid_id, grid_defs):
@@ -255,10 +255,11 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
     Returns the new grid_id
     """
     global axis_count
+    logger = get_logger()
     grid_def_init = get_grid_def(grid_id, grid_defs)
     grid_def = grid_def_init.copy()
     output_grid_id = grid_id
-    axes_to_change = []
+    axes_to_change = list()
     # print "in change_axis for %s "%(grid_id)
 
     # Get settings info about axes normalization
@@ -269,83 +270,63 @@ def change_axes_in_grid(grid_id, grid_defs, axis_defs):
     if is_key_in_lset('sectors'):
         sectors = get_variable_from_lset_without_default('sectors')
     else:
-        sectors = [dim.label for dim in get_collection('grids').items if dim.type == 'character' and dim.value == '']
-    if 'typewetla' in sectors:
-        sectors.remove('typewetla')  # Error in DR 01.00.21
-    # print "sectors=",sectors
+        sectors = [dim.label for dim in get_collection('grids').items if dim.type in ['character', ]
+                   and dim.value in ['', ]]
+    sectors = sorted(list(set(sectors) - set(["typewetla", ]))) # Error in DR 01.00.21
     for sector in sectors:
-        found = False
-        for aid in aliases:
-            if aliases[aid] == sector:
-                found = True
-                continue
-            if isinstance(aliases[aid], tuple) and aliases[aid][0] == sector:
-                found = True
-                continue
-        if not found:
+        if not any([sector in [aliases[aid], aliases[aid][0]] for aid in aliases]):
             # print "\nadding sector : %s"%sector
             aliases[sector] = sector
 
-    for sub in grid_def:
-        if sub.tag in ['axis', ]:
-            # print "checking grid %s"%grid_def
-            if 'axis_ref' not in sub.attrib:
-                # Definitely don't want to change an unnamed axis. Such an axis is
-                # generated by vertical interpolation
-                if any([ssub.tag in ['interpolate_axis', ] for ssub in sub]):
-                    continue
-                else:
-                    print("Cannot normalize an axis in grid %s : no axis_ref for axis %s" % (grid_id, sub))
-                    continue
-                    # raise dr2xml_error("Grid %s has an axis without axis_ref : %s"%(grid_id,grid_def))
+    for sub in [sub for sub in grid_def if sub.tag in ["axis", ]]:
+        # print "checking grid %s"%grid_def
+        if 'axis_ref' not in sub.attrib:
+            # Definitely don't want to change an unnamed axis. Such an axis is
+            # generated by vertical interpolation
+            if not any([ssub.tag in ['interpolate_axis', ] for ssub in sub]):
+                logger.warning("Cannot normalize an axis in grid %s : no axis_ref for axis %s" % (grid_id, sub))
+        else:
             axis_ref = sub.attrib['axis_ref']
-            #
-
             # Just quit if axis doesn't have to be processed
-            if axis_ref not in aliases:
-                # print "for grid ",grid_id,"axis ",axis_ref, " is not in aliases"
-                continue
-            #
-            dr_axis_id = aliases[axis_ref]
-            alt_labels = None
-            if isinstance(dr_axis_id, tuple):
-                dr_axis_id, alt_labels = dr_axis_id
-            dr_axis_id = dr_axis_id.replace('axis_', '')  # For toy_cnrmcm, atmosphere part
-            # print ">>> axis_ref=%s, dr_axis_id=%s,alt_labels=%s"%(axis_ref,dr_axis_id,alt_labels),aliases[axis_ref]
-            #
-            dim_id = 'dim:{}'.format(dr_axis_id)
-            # print "in change_axis for %s %s"%(grid_id,dim_id)
-            if dim_id not in get_uid():  # This should be a dimension !
-                raise Dr2xmlError("Value %s in 'non_standard_axes' is not a DR dimension id" % dr_axis_id)
-            dim = get_uid(dim_id)
-            # We don't process scalars here
-            if dim.value in ['', ] or dim.label in ["scatratio", ]:
-                axis_id, axis_name = create_axis_from_dim(dim, alt_labels, axis_ref, axis_defs)
-                # cannot use ET library which does not guarantee the ordering of axes
-                axes_to_change.append((axis_ref, axis_id, axis_name))
-                output_grid_id += "_" + dim.label
-            else:
-                raise Dr2xmlError("Dimension %s is scalar and shouldn't be quoted in 'non_standard_axes'" % dr_axis_id)
+            if axis_ref in aliases:
+                dr_axis_id = aliases[axis_ref]
+                if isinstance(dr_axis_id, tuple):
+                    dr_axis_id, alt_labels = dr_axis_id
+                else:
+                    alt_labels = None
+                dr_axis_id = dr_axis_id.replace('axis_', '')  # For toy_cnrmcm, atmosphere part
+                #
+                dim_id = 'dim:{}'.format(dr_axis_id)
+                # print "in change_axis for %s %s"%(grid_id,dim_id)
+                if dim_id not in get_uid():  # This should be a dimension !
+                    raise Dr2xmlError("Value %s in 'non_standard_axes' is not a DR dimension id" % dr_axis_id)
+                dim = get_uid(dim_id)
+                # We don't process scalars here
+                if dim.value in ['', ] or dim.label in ["scatratio", ]:
+                    axis_id, axis_name = create_axis_from_dim(dim, alt_labels, axis_ref, axis_defs)
+                    # cannot use ET library which does not guarantee the ordering of axes
+                    axes_to_change.append((axis_ref, axis_id, axis_name))
+                    output_grid_id += "_" + dim.label
+                else:
+                    raise Dr2xmlError("Dimension %s is scalar and shouldn't be quoted in 'non_standard_axes'" %
+                                      dr_axis_id)
     if len(axes_to_change) == 0:
         return grid_id
-    grid_def_rep = grid_def.copy()
-    for (rank, grid_child) in enumerate(grid_def):
-        axes_to_change_new = list()
-        for old, new, name in axes_to_change:
-            if grid_child.tag in ["axis", ] and "axis_ref" in grid_child.attrib and \
-                    grid_child.attrib["axis_ref"] == old:
-                axis_count += 1
-                grid_def_dict = OrderedDict()
-                grid_def_dict["axis_ref"] = new
-                grid_def_dict["name"] = name
-                grid_def_dict["id"] = "ref_to_{}_{}".format(new, axis_count)
-                grid_def_rep[rank].attrib = grid_def_dict
-            else:
-                axes_to_change_new.append((old, new, name))
-        axes_to_change = axes_to_change_new
-    grid_def_rep.attrib["id"] = output_grid_id
-    grid_defs[output_grid_id] = grid_def_rep
-    return output_grid_id
+    else:
+        for rank in range(len(grid_def)):
+            grid_child = grid_def[rank]
+            axes_to_change_new = list()
+            for old, new, name in axes_to_change:
+                if grid_child.tag in ["axis", ] and "axis_ref" in grid_child.attrib and \
+                        grid_child.attrib["axis_ref"] == old:
+                    axis_count += 1
+                    grid_def[rank].attrib = dict(axis_ref=new, name=name, id="ref_to_{}_{}".format(new, axis_count))
+                else:
+                    axes_to_change_new.append((old, new, name))
+            axes_to_change = axes_to_change_new
+        grid_def.attrib["id"] = output_grid_id
+        grid_defs[output_grid_id] = grid_def
+        return output_grid_id
 
 
 def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
