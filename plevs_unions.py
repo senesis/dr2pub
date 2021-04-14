@@ -149,7 +149,7 @@ def create_xios_axis_and_grids_for_plevs_unions(svars, plev_sfxs, dummies, axis_
         if len(list_plevs_union) == 1:
             sdim_union.value = plevs_union_xios
         logger.info("creating axis def for union :%s" % sdim_union.label)
-        axis_def = create_axis_def(sdim_union, union_axis_defs, field_defs)
+        axis_def = create_axis_def(sdim_union, union_axis_defs, field_defs, ping_refs)
         create_grid_def(union_grid_defs, axis_def, sdim_union.out_name,
                         id2gridid(prefix + lwps, get_config_variable("context_index")))
     #

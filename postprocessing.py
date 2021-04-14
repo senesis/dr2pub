@@ -51,11 +51,14 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     #
     logger = get_logger()
     vdims = [sd for sd in sv.sdims.values() if is_vert_dim(sd)]
+    logger.debug("Check if there is a vertical dimension for %s" % sv.label)
     if len(vdims) == 1:
         sd = vdims[0]
     elif len(vdims) > 1:
         raise Dr2xmlError("Too many vertical dims for %s (%s)" % (sv.label, repr(vdims)))
-    elif len(vdims) == 0:
+    elif sv.type in ["dev", ]:
+        return src_grid_id, alias
+    else:
         # Analyze if there is a singleton vertical dimension for the variable
         # sd=scalar_vertical_dimension(sv)
         # if sd is not None :
@@ -63,10 +66,12 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
         # else:
         raise Dr2xmlError(
             "Not enough vertical dims for %s (%s)" % (sv.label, [(s.label, s.out_name) for s in sv.sdims.values()]))
+    logger.debug("Vertical dimension found %s for variable %s" % (sd.label, sv.label))
     #
     #
     # sd=vdims[0]
     alias_with_levels = "_".join([alias, sd.label]) # e.g. 'CMIP6_hus7h_plev7h'
+    logger.debug("Alias with levels for sd is %s" % alias_with_levels)
     if alias_with_levels in pingvars:
         logger.warning("No vertical interpolation for %s because the pingfile provides it" % alias_with_levels)
         return src_grid_id, alias_with_levels
@@ -74,9 +79,12 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     #
     prefix = get_variable_from_lset_without_default("ping_variables_prefix")
     lwps = sv.label_without_psuffix
-    alias_in_ping = prefix + lwps  # e.g. 'CMIP6_hus' and not 'CMIP6_hus7h'; 'CMIP6_co2' and not 'CMIP6_co2Clim'
-    if alias_in_ping not in pingvars:  # e.g. alias_in_ping='CMIP6_hus'
-        raise Dr2xmlError("Field id " + alias_in_ping + " expected in pingfile but not found.")
+    if sv.type in ["perso", "dev"]:
+        alias_in_ping = sv.label
+    else:
+        alias_in_ping = prefix + lwps  # e.g. 'CMIP6_hus' and not 'CMIP6_hus7h'; 'CMIP6_co2' and not 'CMIP6_co2Clim'
+        if alias_in_ping not in pingvars:  # e.g. alias_in_ping='CMIP6_hus'
+            raise Dr2xmlError("Field id " + alias_in_ping + " expected in pingfile but not found.")
     #
     # Create field alias_for_sampling for enforcing the operation before time sampling
     operation = get_variable_from_lset_with_default("vertical_interpolation_operation", "instant")
@@ -89,7 +97,7 @@ def process_vertical_interpolation(sv, alias, pingvars, src_grid_id, field_defs,
     # Construct an axis for interpolating to this vertical dimension
     # e.g. for zoom_case :
     #    <axis id="zoom_plev7h_hus" axis_ref="union_plevs_hus"> <zoom_axis index="(0,6)[  3 6 11 13 15 20 28 ]"/>
-    create_axis_def(sd, axis_defs, field_defs)
+    create_axis_def(sd, axis_defs, field_defs, pingvars)
 
     # Create field 'alias_sample' which time-samples the field at required freq
     # before vertical interpolation

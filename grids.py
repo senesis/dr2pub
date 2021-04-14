@@ -114,7 +114,7 @@ def create_grid_def(grid_defs, axis_def, axis_name, src_grid_id):
     return target_grid_id
 
 
-def create_axis_def(sdim, axis_defs, field_defs):
+def create_axis_def(sdim, axis_defs, field_defs, pingvars):
     """
 
     From a simplified Dim object SDIM representing a vertical dimension,
@@ -158,8 +158,12 @@ def create_axis_def(sdim, axis_defs, field_defs):
         # Define some other values
         if sdim.stdname in ["air_pressure", ]:
             coordname = prefix + "pfull"
-        if sdim.stdname in ["altitude", ]:
+        elif sdim.stdname in ["altitude", ]:
             coordname = prefix + "zg"
+        else:
+            coordname = prefix + sdim.label
+        if coordname not in pingvars:
+            raise Dr2xmlError("Could not find coordinate variable %s in pingfile." % coordname)
         #
         # Create an intermediate field for coordinate , just adding time sampling
         operation = get_variable_from_lset_with_default("vertical_interpolation_operation", "instant")
