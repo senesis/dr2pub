@@ -13,6 +13,8 @@ from collections import OrderedDict
 import re
 
 # Utilities
+import six
+
 from utils import Dr2xmlError
 
 # Logger
@@ -348,6 +350,10 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
     bounds = None
     dim_name = None
     label = None
+    if isinstance(dim.standardName, six.string_types):
+        standard_name = dim.standardName
+    else:
+        standard_name = None
     if dim.type not in ["character", ]:
         if dim.requested != "":
             nb = len(dim.requested.split())
@@ -370,7 +376,7 @@ def create_axis_from_dim(dim, labels, axis_ref, axis_defs):
             strings += "%s " % s
         if length > 0:
             label = "(0,{})[ {} ]".format(length - 1, strings)
-    rep = DR2XMLAxis(id=axis_id, name=axis_name, axis_ref=axis_ref, standard_name=dim.standardName,
+    rep = DR2XMLAxis(id=axis_id, name=axis_name, axis_ref=axis_ref, standard_name=standard_name,
                      long_name=dim.title, prec=prec_dict.get(dim.type), unit=dim.units, value=value, bounds=bounds,
                      dim_name=dim_name, label=label, axis_type=dim.axis)
     axis_defs[axis_id] = rep
