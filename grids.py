@@ -208,32 +208,36 @@ def change_domain_in_grid(domain_id, grid_defs, ping_alias=None, src_grid_id=Non
         raise Dr2xmlError("deprecated")
     else:
         src_grid = get_grid_def_with_lset(src_grid_id, grid_defs)
-        #
-        target_grid_id = src_grid_id + "_" + domain_id
-        # print("<<<DEBUG>>> src_grid_id, domain_id, target_grid_id", src_grid_id, domain_id, target_grid_id)
-        # sequence below was too permissive re. assumption that all grid definition use refs rather than ids
-        # (target_grid_string,count)=re.subn('domain *id= *.([\w_])*.','%s id="%s" %s'% \
-        # (domain_or_axis,domain_id,axis_name), src_grid_string,1)
-        # if count != 1 :
-        target_grid_xml = src_grid.copy()
-        rank = [i for i in range(len(target_grid_xml)) if target_grid_xml[i].tag in ["domain", ]
-                and "domain_ref" in target_grid_xml[i].attrib]
+        # Find the domain rank in the grid definition
+        rank = [i for i in range(len(src_grid)) if src_grid[i].tag in ["domain", ]
+                and "domain_ref" in src_grid[i].attrib]
         if len(rank) == 0:
             raise Dr2xmlError("Fatal: cannot find a domain to replace by %s in src_grid_string %s" % (domain_id,
                                                                                                       src_grid))
         else:
             rank = rank[0]
-        if turn_into_axis:
-            target_grid_xml[rank].tag = "axis"
-            del target_grid_xml[rank].attrib["domain_ref"]
-            target_grid_xml[rank].attrib["axis_ref"] = domain_id
-            target_grid_xml[rank].attrib["name"] = "lat"
+        # Check that there is a change to be done (domain->axis or change in domain_ref)
+        if not turn_into_axis and src_grid[rank].attrib["domain_ref"] in [domain_id, ]:
+            return src_grid_id
         else:
-            target_grid_xml[rank].attrib["domain_ref"] = domain_id
-        target_grid_xml.attrib["id"] = target_grid_id
-        grid_defs[target_grid_id] = target_grid_xml
-        # print "target_grid_id=%s : %s"%(target_grid_id,target_grid_string)
-        return target_grid_id
+            target_grid_id = src_grid_id + "_" + domain_id
+            # print("<<<DEBUG>>> src_grid_id, domain_id, target_grid_id", src_grid_id, domain_id, target_grid_id)
+            # sequence below was too permissive re. assumption that all grid definition use refs rather than ids
+            # (target_grid_string,count)=re.subn('domain *id= *.([\w_])*.','%s id="%s" %s'% \
+            # (domain_or_axis,domain_id,axis_name), src_grid_string,1)
+            # if count != 1 :
+            target_grid_xml = src_grid.copy()
+            if turn_into_axis:
+                target_grid_xml[rank].tag = "axis"
+                del target_grid_xml[rank].attrib["domain_ref"]
+                target_grid_xml[rank].attrib["axis_ref"] = domain_id
+                target_grid_xml[rank].attrib["name"] = "lat"
+            else:
+                target_grid_xml[rank].attrib["domain_ref"] = domain_id
+            target_grid_xml.attrib["id"] = target_grid_id
+            grid_defs[target_grid_id] = target_grid_xml
+            # print "target_grid_id=%s : %s"%(target_grid_id,target_grid_string)
+            return target_grid_id
 
 
 def get_grid_def_with_lset(grid_id, grid_defs):
